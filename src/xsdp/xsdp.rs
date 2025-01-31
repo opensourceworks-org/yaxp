@@ -5,44 +5,44 @@ use std::fs;
 // use std::io::Write;
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Schema {
+pub(crate) struct Schema {
     namespace: Option<String>,
     #[serde(rename = "schemaElement")]
-    schema_element: SchemaElement,
+    pub(crate) schema_element: SchemaElement,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct SchemaElement {
     id: String,
-    name: String,
+    pub(crate) name: String,
     #[serde(rename = "dataType")]
-    data_type: Option<String>,
+    pub(crate) data_type: Option<String>,
     #[serde(rename = "minOccurs")]
-    min_occurs: Option<String>,
+    pub(crate) min_occurs: Option<String>,
     #[serde(rename = "maxOccurs")]
-    max_occurs: Option<String>,
+    pub(crate) max_occurs: Option<String>,
     #[serde(rename = "minLength")]
-    min_length: Option<String>,
+    pub(crate) min_length: Option<String>,
     #[serde(rename = "maxLength")]
-    max_length: Option<String>,
+    pub(crate) max_length: Option<String>,
     #[serde(rename = "minExclusive")]
-    min_exclusive: Option<String>,
+    pub(crate) min_exclusive: Option<String>,
     #[serde(rename = "maxExclusive")]
-    max_exclusive: Option<String>,
+    pub(crate) max_exclusive: Option<String>,
     #[serde(rename = "minInclusive")]
-    min_inclusive: Option<String>,
+    pub(crate) min_inclusive: Option<String>,
     #[serde(rename = "maxInclusive")]
-    max_inclusive: Option<String>,
-    pattern: Option<String>,
+    pub(crate) max_inclusive: Option<String>,
+    pub(crate) pattern: Option<String>,
     #[serde(rename = "fractionDigits")]
-    fraction_digits: Option<String>,
+    pub(crate) fraction_digits: Option<String>,
     #[serde(rename = "totalDigits")]
-    total_digits: Option<String>,
-    values: Option<Vec<String>>,
+    pub(crate) total_digits: Option<String>,
+    pub(crate) values: Option<Vec<String>>,
     #[serde(rename = "isCurrency")]
-    is_currency: bool,
-    xpath: String,
-    elements: Vec<SchemaElement>,
+   pub(crate)  is_currency: bool,
+   pub(crate)  xpath: String,
+    pub(crate) elements: Vec<SchemaElement>,
 }
 
 #[derive(Debug)]
