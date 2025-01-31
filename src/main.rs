@@ -1,7 +1,8 @@
 use roxmltree::Document;
 use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
 use std::fs;
-use std::io::Write;
+// use std::io::Write;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Schema {
@@ -24,19 +25,19 @@ struct SchemaElement {
     min_length: Option<String>,
     #[serde(rename = "maxLength")]
     max_length: Option<String>,
+    #[serde(rename = "minExclusive")]
+    min_exclusive: Option<String>,
+    #[serde(rename = "maxExclusive")]
+    max_exclusive: Option<String>,
+    #[serde(rename = "minInclusive")]
+    min_inclusive: Option<String>,
+    #[serde(rename = "maxInclusive")]
+    max_inclusive: Option<String>,
     pattern: Option<String>,
     #[serde(rename = "fractionDigits")]
     fraction_digits: Option<String>,
     #[serde(rename = "totalDigits")]
     total_digits: Option<String>,
-    #[serde(rename = "minInclusive")]
-    min_inclusive: Option<String>,
-    #[serde(rename = "maxInclusive")]
-    max_inclusive: Option<String>,
-    #[serde(rename = "minExclusive")]
-    min_exclusive: Option<String>,
-    #[serde(rename = "maxExclusive")]
-    max_exclusive: Option<String>,
     values: Option<Vec<String>>,
     #[serde(rename = "isCurrency")]
     is_currency: bool,
@@ -44,7 +45,22 @@ struct SchemaElement {
     elements: Vec<SchemaElement>,
 }
 
-// Extract enumeration values from xs:restriction
+#[derive(Debug)]
+struct SimpleType {
+    data_type: Option<String>,
+    min_length: Option<String>,
+    max_length: Option<String>,
+    min_inclusive: Option<String>,
+    max_inclusive: Option<String>,
+    min_exclusive: Option<String>,
+    max_exclusive: Option<String>,
+    fraction_digits: Option<String>,
+    total_digits: Option<String>,
+    pattern: Option<String>,
+    values: Option<Vec<String>>,
+}
+
+// Extract values from xs:enumeration
 fn extract_enum_values(node: roxmltree::Node) -> Option<Vec<String>> {
     let mut values = Vec::new();
     for child in node.children() {
@@ -58,68 +74,102 @@ fn extract_enum_values(node: roxmltree::Node) -> Option<Vec<String>> {
 }
 
 // Extract constraints from xs:restriction
-fn extract_constraints(node: roxmltree::Node) -> (Option<String>, Option<String>, Option<String>, Option<String>, Option<String>) {
-    let mut max_length = None;
-    let mut fraction_digits = None;
-    let mut total_digits = None;
-    let mut min_inclusive = None;
-    let mut min_exclusive = None;
+fn extract_constraints(node: roxmltree::Node) -> SimpleType {
+    let mut simple_type = SimpleType {
+        data_type: node.attribute("base").map(|s| s.replace("xs:", "")),
+        min_length: None,
+        max_length: None,
+        min_inclusive: None,
+        max_inclusive: None,
+        min_exclusive: None,
+        max_exclusive: None,
+        fraction_digits: None,
+        total_digits: None,
+        pattern: None,
+        values: extract_enum_values(node),
+    };
 
     for child in node.children() {
         match child.tag_name().name() {
-            "maxLength" => max_length = child.attribute("value").map(String::from),
-            "fractionDigits" => fraction_digits = child.attribute("value").map(String::from),
-            "totalDigits" => total_digits = child.attribute("value").map(String::from),
-            "minInclusive" => min_inclusive = child.attribute("value").map(String::from),
-            "minExclusive" => min_exclusive = child.attribute("value").map(String::from),
+            "minLength" => simple_type.min_length = child.attribute("value").map(String::from),
+            "maxLength" => simple_type.max_length = child.attribute("value").map(String::from),
+            "minInclusive" => simple_type.min_inclusive = child.attribute("value").map(String::from),
+            "maxInclusive" => simple_type.max_inclusive = child.attribute("value").map(String::from),
+            "minExclusive" => simple_type.min_exclusive = child.attribute("value").map(String::from),
+            "maxExclusive" => simple_type.max_exclusive = child.attribute("value").map(String::from),
+            "fractionDigits" => simple_type.fraction_digits = child.attribute("value").map(String::from),
+            "totalDigits" => simple_type.total_digits = child.attribute("value").map(String::from),
+            "pattern" => simple_type.pattern = child.attribute("value").map(String::from),
             _ => {}
         }
     }
-    (max_length, fraction_digits, total_digits, min_inclusive, min_exclusive)
+    simple_type
 }
 
-// Parse an xs:element recursively
-fn parse_element(node: roxmltree::Node, parent_xpath: &str) -> Option<SchemaElement> {
+// Parse an xs:element, applying global type constraints
+fn parse_element(node: roxmltree::Node, parent_xpath: &str, global_types: &HashMap<String, SimpleType>) -> Option<SchemaElement> {
     if node.tag_name().name() != "element" {
         return None;
     }
 
     let name = node.attribute("name")?.to_string();
     let xpath = format!("{}/{}", parent_xpath, name);
-    let mut data_type = node.attribute("type").map(String::from);
+    let mut data_type = node.attribute("type").map(|s| s.replace("xs:", ""));
     let min_occurs = node.attribute("minOccurs").map(String::from);
     let max_occurs = node.attribute("maxOccurs").map(String::from);
-    
+
+    let mut min_length = None;
     let mut max_length = None;
+    let mut min_inclusive = None;
+    let mut max_inclusive = None;
+    let mut min_exclusive = None;
+    let mut max_exclusive = None;
     let mut fraction_digits = None;
     let mut total_digits = None;
-    let mut min_inclusive = None;
-    let mut min_exclusive = None;
-    let pattern = None;
+    let mut pattern = None;
     let mut values = None;
-
     let mut elements = Vec::new();
-    
+
+    if let Some(ref type_name) = data_type {
+        if let Some(global_type) = global_types.get(type_name) {
+            min_length = global_type.min_length.clone();
+            max_length = global_type.max_length.clone();
+            min_inclusive = global_type.min_inclusive.clone();
+            max_inclusive = global_type.max_inclusive.clone();
+            min_exclusive = global_type.min_exclusive.clone();
+            max_exclusive = global_type.max_exclusive.clone();
+            fraction_digits = global_type.fraction_digits.clone();
+            total_digits = global_type.total_digits.clone();
+            pattern = global_type.pattern.clone();
+            values = global_type.values.clone();
+        }
+    }
+
     for child in node.children() {
         match child.tag_name().name() {
             "simpleType" => {
                 for subchild in child.children() {
                     if subchild.tag_name().name() == "restriction" {
-                        if let Some(base) = subchild.attribute("base") {
-                            data_type = Some(base.replace("xs:", ""));
+                        let simple_type = extract_constraints(subchild);
+                        if simple_type.data_type.is_some() {
+                            data_type = simple_type.data_type;
                         }
-                        values = extract_enum_values(subchild);
-                        let constraints = extract_constraints(subchild);
-                        max_length = constraints.0;
-                        fraction_digits = constraints.1;
-                        total_digits = constraints.2;
-                        min_inclusive = constraints.3;
+                        min_length = simple_type.min_length;
+                        max_length = simple_type.max_length;
+                        min_inclusive = simple_type.min_inclusive;
+                        max_inclusive = simple_type.max_inclusive;
+                        min_exclusive = simple_type.min_exclusive;
+                        max_exclusive = simple_type.max_exclusive;
+                        fraction_digits = simple_type.fraction_digits;
+                        total_digits = simple_type.total_digits;
+                        pattern = simple_type.pattern;
+                        values = simple_type.values;
                     }
                 }
             }
             "complexType" => {
                 for subchild in child.descendants() {
-                    if let Some(sub_element) = parse_element(subchild, &xpath) {
+                    if let Some(sub_element) = parse_element(subchild, &xpath, global_types) {
                         elements.push(sub_element);
                     }
                 }
@@ -136,15 +186,15 @@ fn parse_element(node: roxmltree::Node, parent_xpath: &str) -> Option<SchemaElem
         data_type,
         min_occurs,
         max_occurs,
-        min_length: None,
+        min_length,
         max_length,
+        min_inclusive,
+        max_inclusive,
+        min_exclusive,
+        max_exclusive,
         pattern,
         fraction_digits,
         total_digits,
-        min_inclusive,
-        max_inclusive: None,
-        min_exclusive,
-        max_exclusive: None,
         values,
         is_currency,
         xpath,
@@ -156,11 +206,25 @@ fn main() {
     let xml_content = fs::read_to_string("example.xsd").expect("Failed to read XSD file");
     let doc = Document::parse(&xml_content).expect("Failed to parse XML");
 
+    let mut global_types = HashMap::new();
+
+    for node in doc.root().descendants() {
+        if node.tag_name().name() == "simpleType" {
+            if let Some(name) = node.attribute("name") {
+                for child in node.children() {
+                    if child.tag_name().name() == "restriction" {
+                        global_types.insert(name.to_string(), extract_constraints(child));
+                    }
+                }
+            }
+        }
+    }
+
     let mut schema_element = None;
 
     for node in doc.root().descendants() {
         if node.tag_name().name() == "element" && node.attribute("name") == Some("Main_Element") {
-            schema_element = parse_element(node, "Main_Element");
+            schema_element = parse_element(node, "Main_Element", &global_types);
             break;
         }
     }
@@ -173,8 +237,7 @@ fn main() {
 
         let json_output = serde_json::to_string_pretty(&schema).expect("Failed to serialize JSON");
 
-        let mut file = fs::File::create("example-output.json").expect("Unable to create output file");
-        file.write_all(json_output.as_bytes()).expect("Failed to write JSON");
+        fs::write("example-output.json", json_output).expect("Failed to write JSON");
 
         println!("✅ JSON output saved to 'example-output.json'");
     } else {
