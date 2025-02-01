@@ -18,7 +18,7 @@ Converts xsd schema to:
 - [ ] protobuf
 - [x] jsonschema
 - [x] json representation of spark schema
-- [ ] SQL (duckdb, ...)
+- [x] duckdb (read_csv columns/types)
 
 ## User Guide
 ### Python

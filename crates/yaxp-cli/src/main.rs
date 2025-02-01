@@ -10,6 +10,7 @@ enum OutputFormat {
     Arrow,
     Spark,
     JsonSchema,
+    Duckdb,
 }
 
 /// <yaxp-cli ⚡>
@@ -21,7 +22,7 @@ struct Args {
     #[clap(short, long)]
     xsd: String,
 
-    /// Output format: json (default), arrow, spark (json)
+    /// Output format
     #[clap(short, long, default_value = "json")]
     format: OutputFormat,
 
@@ -56,6 +57,10 @@ fn main() {
             OutputFormat::JsonSchema => {
                 let json_schema = schema.to_json_schema();
                 println!("{}", json_schema);
+            },
+            OutputFormat::Duckdb => {
+                let duckdb_schema = schema.to_duckdb_schema();
+                println!("{:?}", duckdb_schema);
             },
         },
         Err(e) => eprintln!("❌ {}", e),

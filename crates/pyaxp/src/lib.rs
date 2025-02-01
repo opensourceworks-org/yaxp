@@ -1,4 +1,5 @@
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use yaxp_common::xsdp::parser::parse_file;
 
 
@@ -53,6 +54,19 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
 
                         //Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
                     //}
+                },
+                "duckdb" => {
+                    let duckdb_indexmap = schema.to_duckdb_schema();
+                    let duckdb_schema = PyDict::new(py);
+                    for (key, value) in duckdb_indexmap {
+                        duckdb_schema.set_item(key, value)?;
+                    }
+                    
+                    match duckdb_schema.into_pyobject(py) {
+                        Ok(py_duckdb_schema) => Ok(py_duckdb_schema.into()),
+
+                        _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to duckdb schema"))}
+                    }
                 },
                 _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid format: {}", format))),
             }

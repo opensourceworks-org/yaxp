@@ -2,6 +2,7 @@ use arrow::datatypes::{DataType, Field, Schema as ArrowSchema, TimeUnit};
 use pyo3::IntoPyObject;
 use roxmltree::Document;
 use serde::{Deserialize, Serialize};
+use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::fs;
 use serde_json::json;
@@ -69,6 +70,10 @@ impl Schema {
             },
             "required": ["Main_Element"]
         })
+    }
+
+    pub fn to_duckdb_schema(&self) -> IndexMap<String, String> {
+        self.schema_element.to_duckdb_schema()
     }
 }
 
@@ -309,6 +314,29 @@ impl SchemaElement {
             "properties": properties,
             "required": required,
         })
+    }
+
+    fn to_duckdb_schema(&self) -> IndexMap<String, String> {
+        let mut columns = IndexMap::new();
+
+        for element in &self.elements {
+            let column_type = match element.data_type.as_deref() {
+                Some("string") => format!("VARCHAR({})", element.max_length.as_deref().unwrap_or("255")),
+                Some("integer") => "INTEGER".to_string(),
+                Some("decimal") => {
+                    let precision = element.total_digits.as_deref().unwrap_or("25");
+                    let scale = element.fraction_digits.as_deref().unwrap_or("7");
+                    format!("DECIMAL({}, {})", precision, scale)
+                },
+                Some("date") => "DATE".to_string(),
+                Some("dateTime") => "TIMESTAMP".to_string(),
+                _ => "VARCHAR(255)".to_string(),
+            };
+
+            columns.insert(element.name.clone(), column_type);
+        }
+
+        columns
     }
 }
 
