@@ -9,9 +9,9 @@ Converts xsd schema to:
 - [x] arrow
 - [ ] avro
 - [ ] protobuf
-- [ ] jsonschema
+- [x] jsonschema
 - [x] json representation of spark schema
-- [ ] duckdb
+- [ ] SQL (duckdb, ...) 
 
 ## Project Structure
 
