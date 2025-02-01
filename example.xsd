@@ -184,13 +184,14 @@ YYYY = 0000-9999, MM = 01-12, DD = 01-31, WW = w1, w2, w3, w4, w5.
                 </xs:element>
                 <xs:element name="Field13" type="UnitType" nillable="true" />
                 <xs:element name="Field14" type="PriceMode" nillable="true" />
-                <xs:element name="Field15" type="PriceMode" nillable="true" />
+                <xs:element name="Field15" type="PriceMode" nillable="false" />
                 <xs:element name="Field16" type="Currency" nillable="true" />
-                <xs:element name="Field17" type="xs:date" nillable="true" />
+                <xs:element name="Field17" type="xs:date" nillable="false" />
                 <xs:element name="Field18" nillable="true">
                     <xs:simpleType>
                         <xs:restriction base="xs:string">
                             <xs:maxLength value="30"/>
+                            <xs:pattern value="[a-cA-C]*"/>
                         </xs:restriction>
                     </xs:simpleType>
                 </xs:element>

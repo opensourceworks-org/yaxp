@@ -18,6 +18,7 @@
     "values": null,
     "isCurrency": false,
     "xpath": "Main_Element/Main_Element",
+    "nullable": null,
     "elements": [
       {
         "id": "Field1",
@@ -37,6 +38,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field1",
+        "nullable": false,
         "elements": []
       },
       {
@@ -57,6 +59,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field2",
+        "nullable": false,
         "elements": []
       },
       {
@@ -77,6 +80,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field3",
+        "nullable": false,
         "elements": []
       },
       {
@@ -97,6 +101,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field4",
+        "nullable": true,
         "elements": []
       },
       {
@@ -117,6 +122,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field5",
+        "nullable": false,
         "elements": []
       },
       {
@@ -137,6 +143,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field6",
+        "nullable": true,
         "elements": []
       },
       {
@@ -157,6 +164,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field7",
+        "nullable": true,
         "elements": []
       },
       {
@@ -177,6 +185,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field8",
+        "nullable": false,
         "elements": []
       },
       {
@@ -197,6 +206,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field9",
+        "nullable": true,
         "elements": []
       },
       {
@@ -217,6 +227,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field10",
+        "nullable": true,
         "elements": []
       },
       {
@@ -237,6 +248,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field11",
+        "nullable": true,
         "elements": []
       },
       {
@@ -257,6 +269,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field12",
+        "nullable": true,
         "elements": []
       },
       {
@@ -282,6 +295,7 @@
         ],
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field13",
+        "nullable": true,
         "elements": []
       },
       {
@@ -306,6 +320,7 @@
         ],
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field14",
+        "nullable": true,
         "elements": []
       },
       {
@@ -330,6 +345,7 @@
         ],
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field15",
+        "nullable": false,
         "elements": []
       },
       {
@@ -350,6 +366,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field16",
+        "nullable": true,
         "elements": []
       },
       {
@@ -370,6 +387,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field17",
+        "nullable": false,
         "elements": []
       },
       {
@@ -384,12 +402,13 @@
         "maxExclusive": null,
         "minInclusive": null,
         "maxInclusive": null,
-        "pattern": null,
+        "pattern": "[a-cA-C]*",
         "fractionDigits": null,
         "totalDigits": null,
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field18",
+        "nullable": true,
         "elements": []
       },
       {
@@ -413,6 +432,7 @@
         ],
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field19",
+        "nullable": true,
         "elements": []
       },
       {
@@ -433,6 +453,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field20",
+        "nullable": true,
         "elements": []
       },
       {
@@ -453,6 +474,7 @@
         "values": null,
         "isCurrency": false,
         "xpath": "Main_Element/Main_Element/Field21",
+        "nullable": true,
         "elements": []
       }
     ]

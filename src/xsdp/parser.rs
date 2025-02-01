@@ -1,48 +1,147 @@
+use arrow::datatypes::{DataType, Field, Schema as ArrowSchema, TimeUnit};
 use roxmltree::Document;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-// use std::io::Write;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct Schema {
+pub struct Schema {
     namespace: Option<String>,
     #[serde(rename = "schemaElement")]
-    pub(crate) schema_element: SchemaElement,
+    pub schema_element: SchemaElement,
+}
+
+impl Schema {
+    pub fn new(namespace: Option<String>, schema_element: SchemaElement) -> Self {
+        Schema {
+            namespace,
+            schema_element,
+        }
+    }
+
+    pub fn to_arrow(&self) -> Result<ArrowSchema, Box<dyn std::error::Error>> {
+        let mut fields = vec![];
+
+        for element in &self.schema_element.elements {
+            let field = Field::new(
+                &element.name,
+                element.to_arrow()?,
+                element.nullable.unwrap_or(true),
+            )
+            .with_metadata(element.to_metadata());
+            fields.push(field);
+        }
+
+        Ok(ArrowSchema::new(fields))
+    }
+
+    pub fn write_to_file(&self, output_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let json_output = serde_json::to_string_pretty(&self).expect("Failed to serialize JSON");
+        fs::write(output_file, json_output).expect("Failed to write JSON");
+        Ok(())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct SchemaElement {
+pub struct SchemaElement {
     id: String,
-    pub(crate) name: String,
+    pub name: String,
     #[serde(rename = "dataType")]
-    pub(crate) data_type: Option<String>,
+    pub data_type: Option<String>,
     #[serde(rename = "minOccurs")]
-    pub(crate) min_occurs: Option<String>,
+    pub min_occurs: Option<String>,
     #[serde(rename = "maxOccurs")]
-    pub(crate) max_occurs: Option<String>,
+    pub max_occurs: Option<String>,
     #[serde(rename = "minLength")]
-    pub(crate) min_length: Option<String>,
+    pub min_length: Option<String>,
     #[serde(rename = "maxLength")]
-    pub(crate) max_length: Option<String>,
+    pub max_length: Option<String>,
     #[serde(rename = "minExclusive")]
-    pub(crate) min_exclusive: Option<String>,
+    pub min_exclusive: Option<String>,
     #[serde(rename = "maxExclusive")]
-    pub(crate) max_exclusive: Option<String>,
+    pub max_exclusive: Option<String>,
     #[serde(rename = "minInclusive")]
-    pub(crate) min_inclusive: Option<String>,
+    pub min_inclusive: Option<String>,
     #[serde(rename = "maxInclusive")]
-    pub(crate) max_inclusive: Option<String>,
-    pub(crate) pattern: Option<String>,
+    pub max_inclusive: Option<String>,
+    pub pattern: Option<String>,
     #[serde(rename = "fractionDigits")]
-    pub(crate) fraction_digits: Option<String>,
+    pub fraction_digits: Option<String>,
     #[serde(rename = "totalDigits")]
-    pub(crate) total_digits: Option<String>,
-    pub(crate) values: Option<Vec<String>>,
+    pub total_digits: Option<String>,
+    pub values: Option<Vec<String>>,
     #[serde(rename = "isCurrency")]
-   pub(crate)  is_currency: bool,
-   pub(crate)  xpath: String,
-    pub(crate) elements: Vec<SchemaElement>,
+    pub is_currency: bool,
+    pub xpath: String,
+    pub nullable: Option<bool>,
+    pub elements: Vec<SchemaElement>,
+}
+
+impl SchemaElement {
+    pub(crate) fn to_metadata(&self) -> HashMap<String, String> {
+        let mut metadata = HashMap::new();
+
+        if let Some(ref max_occurs) = self.max_occurs {
+            metadata.insert("maxOccurs".to_string(), max_occurs.clone());
+        }
+        if let Some(ref min_length) = self.min_length {
+            metadata.insert("minLength".to_string(), min_length.clone());
+        }
+        if let Some(ref max_length) = self.max_length {
+            metadata.insert("maxLength".to_string(), max_length.clone());
+        }
+        if let Some(ref min_exclusive) = self.min_exclusive {
+            metadata.insert("minExclusive".to_string(), min_exclusive.clone());
+        }
+        if let Some(ref max_exclusive) = self.max_exclusive {
+            metadata.insert("maxExclusive".to_string(), max_exclusive.clone());
+        }
+        if let Some(ref min_inclusive) = self.min_inclusive {
+            metadata.insert("minInclusive".to_string(), min_inclusive.clone());
+        }
+        if let Some(ref max_inclusive) = self.max_inclusive {
+            metadata.insert("maxInclusive".to_string(), max_inclusive.clone());
+        }
+        if let Some(ref pattern) = self.pattern {
+            metadata.insert("pattern".to_string(), pattern.clone());
+        }
+        if let Some(ref values) = self.values {
+            // Join the vector of values into a single comma-separated string
+            metadata.insert("values".to_string(), values.join(","));
+        }
+        // For booleans, you might only want to store them if they are true or simply always add them.
+        if self.is_currency {
+            metadata.insert("isCurrency".to_string(), self.is_currency.to_string());
+        }
+
+        metadata
+    }
+
+    pub fn to_arrow(&self) -> Result<DataType, Box<dyn std::error::Error>> {
+        if let Some(ref data_type) = self.data_type {
+            match data_type.as_str() {
+                "string" => Ok(DataType::Utf8),
+                "integer" => Ok(DataType::Int32),
+                "decimal" => {
+                    match (&self.total_digits, &self.fraction_digits) {
+                        (Some(precision), Some(scale)) => Ok(DataType::Decimal128(
+                            precision.parse::<u8>().unwrap(),
+                            scale.parse::<i8>().unwrap(),
+                        )),
+                        _ => Ok(DataType::Float64),
+                    }
+                    // Ok(DataType::Decimal128(10, 2))
+                }
+                "boolean" => Ok(DataType::Boolean),
+                "date" => Ok(DataType::Date32),
+                "dateTime" => Ok(DataType::Timestamp(TimeUnit::Nanosecond, None)),
+
+                _ => Ok(DataType::Utf8),
+            }
+        } else {
+            Ok(DataType::Utf8)
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -58,6 +157,7 @@ struct SimpleType {
     total_digits: Option<String>,
     pattern: Option<String>,
     values: Option<Vec<String>>,
+    nullable: Option<bool>,
 }
 
 // Extract values from xs:enumeration
@@ -70,7 +170,11 @@ fn extract_enum_values(node: roxmltree::Node) -> Option<Vec<String>> {
             }
         }
     }
-    if values.is_empty() { None } else { Some(values) }
+    if values.is_empty() {
+        None
+    } else {
+        Some(values)
+    }
 }
 
 // Extract constraints from xs:restriction
@@ -87,42 +191,58 @@ fn extract_constraints(node: roxmltree::Node) -> SimpleType {
         total_digits: None,
         pattern: None,
         values: extract_enum_values(node),
+        nullable: None,
     };
 
     for child in node.children() {
         match child.tag_name().name() {
             "minLength" => simple_type.min_length = child.attribute("value").map(String::from),
             "maxLength" => simple_type.max_length = child.attribute("value").map(String::from),
-            "minInclusive" => simple_type.min_inclusive = child.attribute("value").map(String::from),
-            "maxInclusive" => simple_type.max_inclusive = child.attribute("value").map(String::from),
-            "minExclusive" => simple_type.min_exclusive = child.attribute("value").map(String::from),
-            "maxExclusive" => simple_type.max_exclusive = child.attribute("value").map(String::from),
-            "fractionDigits" => simple_type.fraction_digits = child.attribute("value").map(String::from),
+            "minInclusive" => {
+                simple_type.min_inclusive = child.attribute("value").map(String::from)
+            }
+            "maxInclusive" => {
+                simple_type.max_inclusive = child.attribute("value").map(String::from)
+            }
+            "minExclusive" => {
+                simple_type.min_exclusive = child.attribute("value").map(String::from)
+            }
+            "maxExclusive" => {
+                simple_type.max_exclusive = child.attribute("value").map(String::from)
+            }
+            "fractionDigits" => {
+                simple_type.fraction_digits = child.attribute("value").map(String::from)
+            }
             "totalDigits" => simple_type.total_digits = child.attribute("value").map(String::from),
             "pattern" => simple_type.pattern = child.attribute("value").map(String::from),
+            "nullable" => simple_type.nullable = Some(true),
             _ => {}
         }
     }
     simple_type
 }
 
-// Parse an xs:element, applying global type constraints
-fn parse_element(node: roxmltree::Node, parent_xpath: &str, global_types: &HashMap<String, SimpleType>) -> Option<SchemaElement> {
+fn parse_element(
+    node: roxmltree::Node,
+    parent_xpath: &str,
+    global_types: &HashMap<String, SimpleType>,
+) -> Option<SchemaElement> {
     if node.tag_name().name() != "element" {
         return None;
     }
 
     let name = node.attribute("name")?.to_string();
+    let nullable = node.attribute("nillable").map(|s| s == "true");
     let xpath = format!("{}/{}", parent_xpath, name);
     let mut data_type = node.attribute("type").map(|s| s.replace("xs:", ""));
     let min_occurs = match node.attribute("minOccurs") {
         None => Some("1".to_string()),
-        Some(m) => Some(m.to_string())
+        Some(m) => Some(m.to_string()),
     };
 
-    let max_occurs = match node.attribute("maxOccurs"){
+    let max_occurs = match node.attribute("maxOccurs") {
         Some(m) => Some(m.to_string()),
-        None => Some("1".to_string())
+        None => Some("1".to_string()),
     };
 
     let mut min_length = None;
@@ -206,11 +326,12 @@ fn parse_element(node: roxmltree::Node, parent_xpath: &str, global_types: &HashM
         values,
         is_currency,
         xpath,
+        nullable,
         elements,
     })
 }
 
-pub fn parse_file(xsd_file: &str, output_file: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn parse_file(xsd_file: &str) -> Result<Schema, Box<dyn std::error::Error>> {
     let xml_content = fs::read_to_string(xsd_file).expect("Failed to read XSD file");
     let doc = Document::parse(&xml_content).expect("Failed to parse XML");
 
@@ -231,9 +352,8 @@ pub fn parse_file(xsd_file: &str, output_file: &str) -> Result<String, Box<dyn s
     let mut schema_element = None;
 
     for node in doc.root().descendants() {
-
         if node.tag_name().name() == "element" {
-            schema_element = parse_element(node, &node.attribute("name").unwrap(), &global_types);
+            schema_element = parse_element(node, node.attribute("name").unwrap(), &global_types);
             break;
         }
     }
@@ -244,16 +364,16 @@ pub fn parse_file(xsd_file: &str, output_file: &str) -> Result<String, Box<dyn s
             schema_element,
         };
 
-        let json_output = serde_json::to_string_pretty(&schema).expect("Failed to serialize JSON");
+        Ok(schema)
 
-        fs::write(output_file, json_output).expect("Failed to write JSON");
-
-        // println!("✅ JSON output saved to 'example-output.json'");
-        Ok(format!("JSON output saved to '{}'", output_file))
+        // let json_output = serde_json::to_string_pretty(&schema).expect("Failed to serialize JSON");
+        //
+        // fs::write(output_file, json_output).expect("Failed to write JSON");
+        //
+        // // println!("✅ JSON output saved to 'example-output.json'");
+        // Ok(format!("JSON output saved to '{}'", output_file))
     } else {
         // eprintln!("❌ Failed to find the main schema element in the XSD.");
         Err("Failed to find the main schema element in the XSD.".into())
     }
-
-
 }
