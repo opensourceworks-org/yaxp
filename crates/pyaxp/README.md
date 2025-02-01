@@ -127,6 +127,32 @@ StructType([StructField('Field1', StringType(), False), StructField('Field2', St
 >>>
 ```
 
+### with duckdb
+```python
+$ python
+Python 3.12.3 (main, Apr 15 2024, 17:43:11) [Clang 17.0.6 ] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import duckdb
+>>> from pyaxp import parse_xsd
+>>>
+>>> j = parse_xsd("example.xsd", "duckdb")
+>>> res = duckdb.sql(f"select * from read_csv('example-data.csv', columns={j})")
+>>> res
+┌─────────┬─────────┬─────────┬─────────┬─────────────────────┬────────────┬────────────┬─────────┬───┬─────────┬─────────┬─────────┬─────────┬────────────┬─────────┬─────────┬───────────────┬─────────┐
+│ Field1  │ Field2  │ Field3  │ Field4  │       Field5        │   Field6   │   Field7   │ Field8  │ … │ Field13 │ Field14 │ Field15 │ Field16 │  Field17   │ Field18 │ Field19 │    Field20    │ Field21 │
+│ varchar │ varchar │ varchar │ varchar │      timestamp      │    date    │    date    │ varchar │   │ varchar │ varchar │ varchar │ varchar │    date    │ varchar │ varchar │ decimal(25,7) │  int32  │
+├─────────┼─────────┼─────────┼─────────┼─────────────────────┼────────────┼────────────┼─────────┼───┼─────────┼─────────┼─────────┼─────────┼────────────┼─────────┼─────────┼───────────────┼─────────┤
+│ A1      │ B1      │ C1      │ D1      │ 2024-02-01 09:30:00 │ 2024-02-01 │ 2024-01-31 │ E1      │ … │ I1      │ J1      │ K1      │ L1      │ 2024-02-01 │ M1      │ N1      │   100.0000000 │      10 │
+│ A2      │ B2      │ C2      │ NULL    │ 2024-02-01 10:00:00 │ NULL       │ 2024-01-30 │ E2      │ … │ I2      │ J2      │ K2      │ L2      │ 2024-02-02 │ M2      │ N2      │   200.0000000 │      20 │
+│ A3      │ B3      │ C3      │ D3      │ 2024-02-01 11:15:00 │ 2024-02-03 │ NULL       │ E3      │ … │ I3      │ NULL    │ K3      │ L3      │ 2024-02-03 │ M3      │ N3      │          NULL │    NULL │
+├─────────┴─────────┴─────────┴─────────┴─────────────────────┴────────────┴────────────┴─────────┴───┴─────────┴─────────┴─────────┴─────────┴────────────┴─────────┴─────────┴───────────────┴─────────┤
+│ 3 rows                                                                                                                                                                           21 columns (17 shown) │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+>>> j
+{'Field1': 'VARCHAR(15)', 'Field2': 'VARCHAR(20)', 'Field3': 'VARCHAR(10)', 'Field4': 'VARCHAR(50)', 'Field5': 'TIMESTAMP', 'Field6': 'DATE', 'Field7': 'DATE', 'Field8': 'VARCHAR(10)', 'Field9': 'VARCHAR(3)', 'Field10': 'VARCHAR(30)', 'Field11': 'VARCHAR(10)', 'Field12': 'DECIMAL(25, 7)', 'Field13': 'VARCHAR(255)', 'Field14': 'VARCHAR(255)', 'Field15': 'VARCHAR(255)', 'Field16': 'VARCHAR(255)', 'Field17': 'DATE', 'Field18': 'VARCHAR(30)', 'Field19': 'VARCHAR(255)', 'Field20': 'DECIMAL(25, 7)', 'Field21': 'INTEGER'}
+>>>
+```
 
 ## TODO
 
