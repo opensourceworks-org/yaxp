@@ -2,6 +2,11 @@
 name = "yaxp-cli"
 version = "0.1.2"
 edition = "2021"
+authors = ["Jeroen <jeroen@flexworks.eu>"]
+description = "<yaxp-cli ⚡> Yet Another XML Parser CLI"
+homepage = "https://github.com/opensourceworks-org/yaxp"
+repository = "https://github.com/opensourceworks-org/yaxp/tree/main/crates/yaxp-cli"
+license = "MIT"
 
 [dependencies]
 clap = { version = "4.5.23", features = ["derive"] }
