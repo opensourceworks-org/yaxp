@@ -1,6 +1,4 @@
-use std::convert::Infallible;
 use pyo3::prelude::*;
-use pyo3::types::{PyNone, PyString};
 use yaxp_common::xsdp::parser::parse_file;
 
 
