@@ -3,7 +3,7 @@ use yaxp_common::xsdp::parser::parse_file;
 
 
 #[pyfunction]
-fn parse_xsd_to_json(py: Python, xsd_file: &str) -> PyResult<PyObject> {
+fn parse_xsd(py: Python, xsd_file: &str) -> PyResult<PyObject> {
     let result = parse_file(xsd_file);
 
     match result {
@@ -20,6 +20,6 @@ fn parse_xsd_to_json(py: Python, xsd_file: &str) -> PyResult<PyObject> {
 // main entrypoint for python module
 #[pymodule]
 fn pyaxp(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(parse_xsd_to_json, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_xsd, m)?)?;
     Ok(())
 }
