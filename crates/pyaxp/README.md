@@ -1,5 +1,12 @@
-# **<yaxp ⚡>**
-Yet Another XSD Parser
+<p align="center">
+  <a href="https://pypi.org/project/pyaxp/">
+    <img alt="downloads" src="https://img.shields.io/pypi/dm/pyaxp">
+  </a>
+</p>
+![PyPI - Downloads](https://img.shields.io/pypi/dm/pyaxp)
+
+# **<yaxp ⚡> Yet Another XSD Parser**
+
 
 ## Introduction
 Using [roxmltree](https://github.com/RazrFalcon/roxmltree) to parse XML files. 
