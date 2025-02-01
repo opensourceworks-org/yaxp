@@ -41,11 +41,12 @@ impl Schema {
         Ok(json_output)
     }
 
-    pub fn write_to_file(&self, output_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn write_to_json_file(&self, output_file: &str) -> Result<(), Box<dyn std::error::Error>> {
         let json_output = serde_json::to_string_pretty(&self).expect("Failed to serialize JSON");
         fs::write(output_file, json_output).expect("Failed to write JSON");
         Ok(())
     }
+
 }
 
 

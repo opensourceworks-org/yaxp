@@ -10,8 +10,8 @@ default-members = [
 
 [workspace.package]
 name = "yaxp"
-version = "0.1.1"
-edition = "2024"
+version = "0.1.2"
+edition = "2021"
 authors = ["Jeroen <jeroen@flexworks.eu>"]
 description = "Yet Another XML Parser"
 homepage = "https://github.com/opensourceworks-org/yaxp"

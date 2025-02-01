@@ -369,6 +369,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "769b0145982b4b48713e01ec42d61614425f27b7058bda7180a3a41f30104796"
 dependencies = [
  "clap_builder",
+ "clap_derive",
 ]
 
 [[package]]
@@ -381,6 +382,18 @@ dependencies = [
  "anstyle",
  "clap_lex",
  "strsim",
+]
+
+[[package]]
+name = "clap_derive"
+version = "4.5.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54b755194d6389280185988721fffba69495eed5ee9feeee9a599b53db80318c"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -790,7 +803,7 @@ dependencies = [
 
 [[package]]
 name = "pyaxp"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "pyo3",
  "serde",
@@ -1201,15 +1214,16 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "yaxp-cli"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "clap",
+ "serde",
  "yaxp-common",
 ]
 
 [[package]]
 name = "yaxp-common"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "arrow",
  "pyo3",

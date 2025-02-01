@@ -1,7 +1,7 @@
 [package]
 name = "yaxp-common"
-version = "0.1.1"
-edition = "2024"
+version = "0.1.2"
+edition = "2021"
 authors = ["Jeroen <jeroen@flexworks.eu>"]
 description = "Yet Another XML Parser"
 homepage = "https://github.com/opensourceworks-org/yaxp"
