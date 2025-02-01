@@ -3,8 +3,8 @@
     <img alt="downloads" src="https://img.shields.io/crates/d/yaxp-common">
   </a>
 </p>
-# **<yaxp ⚡>**
-Yet Another XSD Parser
+
+# **<yaxp ⚡> Yet Another XSD Parser**
 
 ## Introduction
 Using [roxmltree](https://github.com/RazrFalcon/roxmltree) to parse XML files. 

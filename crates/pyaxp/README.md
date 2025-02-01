@@ -4,7 +4,6 @@
   </a>
 </p>
 
-![PyPI - Downloads](https://img.shields.io/pypi/dm/pyaxp)
 
 # **<yaxp ⚡> Yet Another XSD Parser**
 
