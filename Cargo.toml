@@ -12,4 +12,8 @@ default-members = [
 name = "yaxp"
 version = "0.1.0"
 edition = "2024"
-
+authors = ["Jeroen <jeroen@flexworks.eu>"]
+description = "Yet Another XML Parser"
+homepage = "https://github.com/opensourceworks-org/yaxp"
+repository = "https://github.com/opensourceworks-org/yaxp"
+license = "MIT"
