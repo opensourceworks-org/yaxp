@@ -73,6 +73,7 @@ mod tests {
             elements: vec![],
         };
 
+
         let schema = Schema::new(None, schema_element);
         schema.write_to_json_file("test-output.json").unwrap();
         let output = fs::read_to_string("test-output.json").unwrap();
@@ -103,7 +104,32 @@ mod tests {
             nullable: Some(false),
             elements: vec![],
         };
+        let schema = Schema {
+            namespace: None,
+            schema_element: SchemaElement {
+                id: "root".to_string(),
+                name: "root".to_string(),
+                data_type: None,
+                min_occurs: None,
+                max_occurs: None,
+                min_length: None,
+                max_length: None,
+                min_inclusive: None,
+                max_inclusive: None,
+                min_exclusive: None,
+                max_exclusive: None,
+                pattern: None,
+                fraction_digits: None,
+                total_digits: None,
+                values: None,
+                is_currency: false,
+                xpath: "/example".to_string(),
+                nullable: None,
+                elements: vec![schema_element.clone()],
+            },
 
+        };
+        let converted_spark_schema = schema.to_spark().unwrap();
         let spark_element = schema_element.to_spark().unwrap();
 
         let mut spark_schema = SparkSchema {
@@ -131,9 +157,11 @@ mod tests {
             metadata: None,
         }]);
 
+        let validate_spark_schema = "{\"type\":\"struct\",\"fields\":[{\"name\":\"example\",\"type\":\"StringType\",\"nullable\":false,\"metadata\":{\"maxOccurs\":\"1\"}}]}".to_string();
+
         assert_eq!(
-            spark_schema.to_json().unwrap(),
-            spark_element.to_json().unwrap()
+            validate_spark_schema,
+            converted_spark_schema.to_json().unwrap()
         );
     }
 }

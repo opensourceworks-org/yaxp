@@ -7,7 +7,7 @@ use std::fs;
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct Schema {
-    namespace: Option<String>,
+    pub(crate) namespace: Option<String>,
     #[serde(rename = "schemaElement")]
     pub schema_element: SchemaElement,
 }
@@ -46,6 +46,18 @@ impl Schema {
         fs::write(output_file, json_output).expect("Failed to write JSON");
         Ok(())
     }
+
+    pub fn to_spark(&self) -> Result<SparkSchema, Box<dyn std::error::Error>> {
+        let mut fields = vec![];
+
+        for element in &self.schema_element.elements {
+            fields.push(element.to_spark()?);
+        }
+
+        let schema = SparkSchema::new("struct".to_string(), fields);
+
+        Ok(schema)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
@@ -56,7 +68,7 @@ pub struct SparkSchema {
 }
 
 impl SparkSchema {
-    pub fn new(schema_type: String, mut fields: Vec<SparkField>) -> Self {
+    pub fn new(schema_type: String, fields: Vec<SparkField>) -> Self {
         SparkSchema {
             schema_type,
             fields,
@@ -69,7 +81,7 @@ impl SparkSchema {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+#[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone)]
 pub struct SparkField {
     #[serde(rename = "name")]
     pub field_name: String,
@@ -86,9 +98,9 @@ impl SparkField {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+#[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone)]
 pub struct SchemaElement {
-    pub(crate) id: String,
+    pub id: String,
     pub name: String,
     #[serde(rename = "dataType")]
     pub data_type: Option<String>,
@@ -122,7 +134,7 @@ pub struct SchemaElement {
 }
 
 impl SchemaElement {
-    pub(crate) fn to_metadata(&self) -> HashMap<String, String> {
+    pub fn to_metadata(&self) -> HashMap<String, String> {
         let mut metadata = HashMap::new();
 
         if let Some(ref max_occurs) = self.max_occurs {
@@ -174,7 +186,6 @@ impl SchemaElement {
                         )),
                         _ => Ok(DataType::Float64),
                     }
-                    // Ok(DataType::Decimal128(10, 2))
                 }
                 "boolean" => Ok(DataType::Boolean),
                 "date" => Ok(DataType::Date32),
@@ -188,7 +199,6 @@ impl SchemaElement {
     }
 
     pub fn to_spark(&self) -> Result<SparkField, Box<dyn std::error::Error>> {
-        //let mut fields = vec![];
 
         let field_type = match &self.data_type.as_deref() {
             Some("decimal") => {
@@ -198,21 +208,21 @@ impl SchemaElement {
                 ) {
                     let precision = total_digits.parse::<u32>().unwrap_or(0);
                     let scale = fraction_digits.parse::<u32>().unwrap_or(0);
-                    format!("DecimalType({}, {})", precision, scale)
+                    format!("decimal({}, {})", precision, scale)
                 } else {
-                    "DecimalType".to_string()
+                    "decimal".to_string()
                 }
             }
-            Some("int") | Some("integer") => "IntegerType".to_string(),
-            Some("long") => "LongType".to_string(),
-            Some("float") => "FloatType".to_string(),
-            Some("double") => "DoubleType".to_string(),
-            Some("boolean") => "BooleanType".to_string(),
-            Some("timestamp") => "TimestampType".to_string(),
-            Some("date") => "DateType".to_string(),
-            Some("string") => "StringType".to_string(),
-            Some(other) => other.to_string(), // Default: pass through the provided type.
-            None => "StringType".to_string(), // Default Spark type if none is provided.
+            Some("int") | Some("integer") => "integer".to_string(),
+            Some("long") => "long".to_string(),
+            Some("float") => "float".to_string(),
+            Some("double") => "double".to_string(),
+            Some("boolean") => "boolean".to_string(),
+            Some("dateTime") => "timestamp".to_string(),
+            Some("date") => "date".to_string(),
+            Some("string") => "string".to_string(),
+            Some(other) => other.to_string(), // todo: pass through the provided type?
+            None => "string".to_string(),
         };
 
         let field = SparkField {
@@ -221,7 +231,6 @@ impl SchemaElement {
             nullable: self.nullable.unwrap_or(true),
             metadata: Some(self.to_metadata()),
         };
-        // fields.push(field);
 
         Ok(field)
     }
