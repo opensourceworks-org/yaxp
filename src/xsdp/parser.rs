@@ -44,7 +44,7 @@ impl Schema {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SchemaElement {
-    id: String,
+    pub(crate) id: String,
     pub name: String,
     #[serde(rename = "dataType")]
     pub data_type: Option<String>,
