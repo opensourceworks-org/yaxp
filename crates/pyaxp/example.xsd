@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-16"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:annotation>
+        <xs:documentation>document documentation </xs:documentation>
+    </xs:annotation>
+    <xs:simpleType name="Currency">
+        <xs:annotation>
+            <xs:documentation>explanation about the currency type</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value=".{3}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="nonNegativeDecimal">
+        <xs:annotation>
+            <xs:documentation>Represents any decimal value >= 0.</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="decimal257">
+            <xs:minInclusive value="0"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="PriceMode">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="%"/>
+            <xs:enumeration value="P"/>
+            <xs:enumeration value="R"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="UnitType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="N"/>
+            <xs:enumeration value="Q"/>
+            <xs:enumeration value="V"/>
+            <xs:enumeration value="C"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Sign">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="+"/>
+            <xs:enumeration value="-"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="YesNo">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Y"/>
+            <xs:enumeration value="N"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="decimal257">
+        <xs:restriction base="xs:decimal">
+            <xs:totalDigits value="25"/>
+            <xs:fractionDigits value="7"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="decimal259">
+        <xs:restriction base="xs:decimal">
+            <xs:totalDigits value="25"/>
+            <xs:fractionDigits value="9"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="decimal2510">
+        <xs:restriction base="xs:decimal">
+            <xs:totalDigits value="25"/>
+            <xs:fractionDigits value="10"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="size">
+        <xs:annotation>
+            <xs:documentation>positive int</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:nonNegativeInteger"/>
+    </xs:simpleType>
+    <xs:simpleType name="SeqNum">
+        <xs:annotation>
+            <xs:documentation>positive int</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:positiveInteger"/>
+    </xs:simpleType>
+    <xs:simpleType name="Qty">
+        <xs:annotation>
+            <xs:documentation>decimal</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:decimal"/>
+    </xs:simpleType>
+    <xs:simpleType name="Price">
+        <xs:annotation>
+            <xs:documentation>decimal representing a price, may be negative</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:decimal"/>
+    </xs:simpleType>
+    <xs:simpleType name="Percentage">
+        <xs:annotation>
+            <xs:documentation>decimal representing a percentage (e.g. .05 represents 5% and .9525 represents 95.25%).  Note the number of decimal places may vary.</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:decimal"/>
+    </xs:simpleType>
+    <xs:simpleType name="MonthYear">
+        <xs:annotation>
+            <xs:documentation>
+string field representing month of a year. An optional day of the month  can be appended or an optional week code.
+Valid formats:
+YYYYMM
+YYYYMMDD
+YYYYMMWW
+YYYY = 0000-9999, MM = 01-12, DD = 01-31, WW = w1, w2, w3, w4, w5.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d{4}(0|1)\d([0-3wW]\d)?"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="Main_Element">
+        <xs:annotation>
+            <xs:documentation>Element documentation string</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Field1" nillable="false">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:maxLength value="15"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+                <xs:element name="Field2" nillable="false">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:maxLength value="20"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+                <xs:element name="Field3" nillable="false">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:maxLength value="10"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+                <xs:element name="Field4" nillable="true">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:maxLength value="50"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+                <xs:element name="Field5" type="xs:dateTime" nillable="false" />
+                <xs:element name="Field6" type="xs:date" nillable="true" />
+                <xs:element name="Field7" type="xs:date" nillable="true" />
+                <xs:element name="Field8" nillable="false">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:maxLength value="10"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+                <xs:element name="Field9" nillable="true">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:maxLength value="3"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+                <xs:element name="Field10" nillable="true">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:maxLength value="30"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+                <xs:element name="Field11" nillable="true">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:maxLength value="10"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+                <xs:element name="Field12" nillable="true">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:decimal">
+                            <xs:totalDigits value="25"/>
+                            <xs:fractionDigits value="7"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+                <xs:element name="Field13" type="UnitType" nillable="true" />
+                <xs:element name="Field14" type="PriceMode" nillable="true" />
+                <xs:element name="Field15" type="PriceMode" nillable="false" />
+                <xs:element name="Field16" type="Currency" nillable="true" />
+                <xs:element name="Field17" type="xs:date" nillable="false" />
+                <xs:element name="Field18" nillable="true">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:maxLength value="30"/>
+                            <xs:pattern value="[a-cA-C]*"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:element>
+                <xs:element name="Field19" type="YesNo" nillable="true" />
+                <xs:element name="Field20" type="Percentage" nillable="true" />
+                <xs:element name="Field21" type="xs:integer" nillable="true" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
