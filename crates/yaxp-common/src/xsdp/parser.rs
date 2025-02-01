@@ -46,9 +46,45 @@ impl Schema {
         fs::write(output_file, json_output).expect("Failed to write JSON");
         Ok(())
     }
-
 }
 
+#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+pub struct SparkSchema {
+    #[serde(rename = "type")]
+    pub schema_type: String,
+    pub fields: Vec<SparkField>,
+}
+
+impl SparkSchema {
+    pub fn new(schema_type: String, mut fields: Vec<SparkField>) -> Self {
+        SparkSchema {
+            schema_type,
+            fields,
+        }
+    }
+
+    pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let json_output = serde_json::to_string(&self).expect("Failed to serialize JSON");
+        Ok(json_output)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+pub struct SparkField {
+    #[serde(rename = "name")]
+    pub field_name: String,
+    #[serde(rename = "type")]
+    pub field_type: String,
+    pub nullable: bool,
+    pub metadata: Option<HashMap<String, String>>,
+}
+
+impl SparkField {
+    pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let json_output = serde_json::to_string(&self).expect("Failed to serialize JSON");
+        Ok(json_output)
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct SchemaElement {
@@ -149,6 +185,45 @@ impl SchemaElement {
         } else {
             Ok(DataType::Utf8)
         }
+    }
+
+    pub fn to_spark(&self) -> Result<SparkField, Box<dyn std::error::Error>> {
+        //let mut fields = vec![];
+
+        let field_type = match &self.data_type.as_deref() {
+            Some("decimal") => {
+                if let (Some(ref total_digits), Some(ref fraction_digits)) = (
+                    &self.total_digits.as_deref(),
+                    &self.fraction_digits.as_deref(),
+                ) {
+                    let precision = total_digits.parse::<u32>().unwrap_or(0);
+                    let scale = fraction_digits.parse::<u32>().unwrap_or(0);
+                    format!("DecimalType({}, {})", precision, scale)
+                } else {
+                    "DecimalType".to_string()
+                }
+            }
+            Some("int") | Some("integer") => "IntegerType".to_string(),
+            Some("long") => "LongType".to_string(),
+            Some("float") => "FloatType".to_string(),
+            Some("double") => "DoubleType".to_string(),
+            Some("boolean") => "BooleanType".to_string(),
+            Some("timestamp") => "TimestampType".to_string(),
+            Some("date") => "DateType".to_string(),
+            Some("string") => "StringType".to_string(),
+            Some(other) => other.to_string(), // Default: pass through the provided type.
+            None => "StringType".to_string(), // Default Spark type if none is provided.
+        };
+
+        let field = SparkField {
+            field_name: self.name.clone(),
+            field_type,
+            nullable: self.nullable.unwrap_or(true),
+            metadata: Some(self.to_metadata()),
+        };
+        // fields.push(field);
+
+        Ok(field)
     }
 }
 
@@ -373,10 +448,7 @@ pub fn parse_file(xsd_file: &str) -> Result<Schema, Box<dyn std::error::Error>> 
         };
 
         Ok(schema)
-
     } else {
         Err("Failed to find the main schema element in the XSD.".into())
     }
 }
-
-

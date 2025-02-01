@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::xsdp::parser::{parse_file, Schema, SchemaElement, SparkField, SparkSchema};
     use std::fs;
-    use crate::xsdp::parser::{parse_file, Schema, SchemaElement};
 
     #[test]
     fn test_parse_file() {
@@ -74,9 +74,66 @@ mod tests {
         };
 
         let schema = Schema::new(None, schema_element);
-        schema.write_to_file("test-output.json").unwrap();
+        schema.write_to_json_file("test-output.json").unwrap();
         let output = fs::read_to_string("test-output.json").unwrap();
         assert!(output.contains("\"name\": \"example\""));
         fs::remove_file("test-output.json").unwrap();
+    }
+
+    #[test]
+    fn test_spark_conversion() {
+        let schema_element = SchemaElement {
+            id: "example".to_string(),
+            name: "example".to_string(),
+            data_type: Some("string".to_string()),
+            min_occurs: Some("1".to_string()),
+            max_occurs: Some("1".to_string()),
+            min_length: None,
+            max_length: None,
+            min_inclusive: None,
+            max_inclusive: None,
+            min_exclusive: None,
+            max_exclusive: None,
+            pattern: None,
+            fraction_digits: None,
+            total_digits: None,
+            values: None,
+            is_currency: false,
+            xpath: "/example".to_string(),
+            nullable: Some(false),
+            elements: vec![],
+        };
+
+        let spark_element = schema_element.to_spark().unwrap();
+
+        let mut spark_schema = SparkSchema {
+            schema_type: "struct".to_string(),
+            fields: vec![
+                SparkField {
+                    field_name: "example".to_string(),
+                    field_type: "string".to_string(),
+                    nullable: true,
+                    metadata: None,
+                },
+                SparkField {
+                    field_name: "example2".to_string(),
+                    field_type: "string".to_string(),
+                    nullable: true,
+                    metadata: None,
+                },
+            ],
+        };
+
+        spark_schema.fields.append(&mut vec![SparkField {
+            field_name: "example3".to_string(),
+            field_type: "string".to_string(),
+            nullable: true,
+            metadata: None,
+        }]);
+
+        assert_eq!(
+            spark_schema.to_json().unwrap(),
+            spark_element.to_json().unwrap()
+        );
     }
 }

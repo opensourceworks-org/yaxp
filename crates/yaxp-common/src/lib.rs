@@ -1,2 +1,2 @@
-pub mod xsdp;
 mod tests;
+pub mod xsdp;
