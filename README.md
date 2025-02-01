@@ -21,6 +21,14 @@ crates
 ├── yaxp-cli            -> cli version
 └── yaxp-common         -> lib
 ```
+
+## Downloads
+
+- [yaxp-common](https://crates.io/crates/yaxp-common) on crates.io
+- [yaxp-cli](https://crates.io/crates/yaxp-cli) on crates.io
+- [pyaxp](https://pypi.org/project/pyaxp/) on pypi.org
+
+
 ## User Guide
 ### Python
 - create and activate a Python virtual environment (or use poetry, uv, etc.)
