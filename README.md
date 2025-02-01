@@ -146,5 +146,5 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 ## TODO
 
-- [ ] Add pyo3/maturin support
+- [x] Add pyo3/maturin support
 - [ ] Add tests
