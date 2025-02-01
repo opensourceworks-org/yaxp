@@ -1,0 +1,38 @@
+# **<yaxp ⚡>**
+Yet Another XSD Parser
+
+## Introduction
+Using [roxmltree](https://github.com/RazrFalcon/roxmltree) to parse XML files. 
+
+Converts xsd schema to:
+- [x] json
+- [x] arrow
+- [ ] avro
+- [ ] protobuf
+- [ ] jsonschema
+- [ ] json representation of spark schema
+- [ ] duckdb
+
+
+## Usage
+
+```shell
+$ ./yaxp-cli --help
+<yaxp-cli ⚡> Yet Another XSD Parser
+
+Usage: yaxp-cli [OPTIONS] --xsd <XSD>
+
+Options:
+  -x, --xsd <XSD>        Path to the XSD file
+  -f, --format <FORMAT>  Output format: json (default), arrow [default: json] [possible values: json, arrow]
+  -o, --output <OUTPUT>  optional output filename
+  -h, --help             Print help
+  -V, --version          Print version
+$
+ ```
+
+
+## TODO
+
+- [x] Add pyo3/maturin support (crate pyaxp)
+- [ ] Add tests
