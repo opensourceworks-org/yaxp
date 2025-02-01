@@ -10,11 +10,6 @@ authors = [
     { name = "Jeroen", email = "jeroen@flexworks.eu" }
 ]
 
-[project.urls]
-Homepage = "https://github.com/opensourceworks-org/yaxp"
-Documentation = "https://github.com/opensourceworks-org/yaxp/blob/main/crates/pyaxp/README.md"
-Repository = "https://github.com/opensourceworks-org/yaxp/blob/main/crates/pyaxp"
-Bug Tracker = "https://github.com/opensourceworks-org/yaxp/issues"
 
 
 requires-python = ">=3.8"
@@ -26,3 +21,9 @@ classifiers = [
 dynamic = ["version"]
 [tool.maturin]
 features = ["pyo3/extension-module"]
+
+[project.urls]
+Homepage = "https://github.com/opensourceworks-org/yaxp"
+Documentation = "https://github.com/opensourceworks-org/yaxp/blob/main/crates/pyaxp/README.md"
+Repository = "https://github.com/opensourceworks-org/yaxp/blob/main/crates/pyaxp"
+BugTracker = "https://github.com/opensourceworks-org/yaxp/issues"
