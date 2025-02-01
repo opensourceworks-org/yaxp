@@ -21,6 +21,10 @@ permissions:
 jobs:
   linux:
     runs-on: ${{ matrix.platform.runner }}
+    # Defaults apply only to run: steps (not to actions that use "uses:")
+    defaults:
+      run:
+        working-directory: crates/pyaxp
     strategy:
       matrix:
         platform:
@@ -44,6 +48,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: crates/pyaxp/Cargo.toml
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -52,10 +57,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-linux-${{ matrix.platform.target }}
-          path: dist
+          # Note: dist is created inside crates/pyaxp, so we give the full path.
+          path: crates/pyaxp/dist
 
   musllinux:
     runs-on: ${{ matrix.platform.runner }}
+    defaults:
+      run:
+        working-directory: crates/pyaxp
     strategy:
       matrix:
         platform:
@@ -75,6 +84,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: crates/pyaxp/Cargo.toml
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -83,10 +93,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-musllinux-${{ matrix.platform.target }}
-          path: dist
+          path: crates/pyaxp/dist
 
   windows:
     runs-on: ${{ matrix.platform.runner }}
+    defaults:
+      run:
+        working-directory: crates/pyaxp
     strategy:
       matrix:
         platform:
@@ -103,6 +116,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: crates/pyaxp/Cargo.toml
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -110,10 +124,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-windows-${{ matrix.platform.target }}
-          path: dist
+          path: crates/pyaxp/dist
 
   macos:
     runs-on: ${{ matrix.platform.runner }}
+    defaults:
+      run:
+        working-directory: crates/pyaxp
     strategy:
       matrix:
         platform:
@@ -129,6 +146,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: crates/pyaxp/Cargo.toml
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -136,26 +154,33 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-${{ matrix.platform.target }}
-          path: dist
+          path: crates/pyaxp/dist
 
   sdist:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/pyaxp
     steps:
       - uses: actions/checkout@v4
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
+          working-directory: crates/pyaxp/Cargo.toml
           command: sdist
           args: --out dist
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
           name: wheels-sdist
-          path: dist
+          path: crates/pyaxp/dist
 
   release:
     name: Release
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/pyaxp
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: [linux, musllinux, windows, macos, sdist]
     permissions:
@@ -177,5 +202,6 @@ jobs:
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         with:
+          working-directory: crates/pyaxp/Cargo.toml
           command: upload
           args: --non-interactive --skip-existing wheels-*/*
