@@ -106,10 +106,10 @@ impl SchemaElement {
             metadata.insert("pattern".to_string(), pattern.clone());
         }
         if let Some(ref values) = self.values {
-            // Join the vector of values into a single comma-separated string
+            // have to join the vector of values into a single comma-separated string
             metadata.insert("values".to_string(), values.join(","));
         }
-        // For booleans, you might only want to store them if they are true or simply always add them.
+        // may want to add explicitly, check with xsd specification
         if self.is_currency {
             metadata.insert("isCurrency".to_string(), self.is_currency.to_string());
         }
@@ -160,7 +160,7 @@ struct SimpleType {
     nullable: Option<bool>,
 }
 
-// Extract values from xs:enumeration
+// xs:enumeration
 fn extract_enum_values(node: roxmltree::Node) -> Option<Vec<String>> {
     let mut values = Vec::new();
     for child in node.children() {
@@ -177,7 +177,7 @@ fn extract_enum_values(node: roxmltree::Node) -> Option<Vec<String>> {
     }
 }
 
-// Extract constraints from xs:restriction
+// from xs:restriction
 fn extract_constraints(node: roxmltree::Node) -> SimpleType {
     let mut simple_type = SimpleType {
         data_type: node.attribute("base").map(|s| s.replace("xs:", "")),
@@ -366,14 +366,7 @@ pub fn parse_file(xsd_file: &str) -> Result<Schema, Box<dyn std::error::Error>> 
 
         Ok(schema)
 
-        // let json_output = serde_json::to_string_pretty(&schema).expect("Failed to serialize JSON");
-        //
-        // fs::write(output_file, json_output).expect("Failed to write JSON");
-        //
-        // // println!("✅ JSON output saved to 'example-output.json'");
-        // Ok(format!("JSON output saved to '{}'", output_file))
     } else {
-        // eprintln!("❌ Failed to find the main schema element in the XSD.");
         Err("Failed to find the main schema element in the XSD.".into())
     }
 }
