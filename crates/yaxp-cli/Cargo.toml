@@ -10,5 +10,5 @@ license = "MIT"
 
 [dependencies]
 clap = { version = "4.5.23", features = ["derive"] }
-yaxp-common = { path = "../yaxp-common", version = "0.1.2" }
+yaxp-common = { path = "../yaxp-common", version = "0.1.4" }
 serde = { version = "1.0.217", features = ["derive"] }
