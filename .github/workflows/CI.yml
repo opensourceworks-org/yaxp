@@ -48,7 +48,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          working-directory: crates/pyaxp/Cargo.toml
+          working-directory: crates/pyaxp
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -84,7 +84,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          working-directory: crates/pyaxp/Cargo.toml
+          working-directory: crates/pyaxp
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -116,7 +116,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          working-directory: crates/pyaxp/Cargo.toml
+          working-directory: crates/pyaxp
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -146,7 +146,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          working-directory: crates/pyaxp/Cargo.toml
+          working-directory: crates/pyaxp
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -166,7 +166,7 @@ jobs:
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
-          working-directory: crates/pyaxp/Cargo.toml
+          working-directory: crates/pyaxp
           command: sdist
           args: --out dist
       - name: Upload sdist
@@ -202,6 +202,6 @@ jobs:
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         with:
-          working-directory: crates/pyaxp/Cargo.toml
+          working-directory: crates/pyaxp
           command: upload
           args: --non-interactive --skip-existing wheels-*/*
