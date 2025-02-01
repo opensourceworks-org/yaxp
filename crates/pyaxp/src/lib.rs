@@ -42,7 +42,18 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
                         }
                         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
                     }
-                }
+                },
+                "json_schema" => {
+                    let json_schema = schema.to_json_schema();
+                        match json_schema.to_string().into_pyobject(py) {
+                            Ok(py_json_schema) => Ok(py_json_schema.into()),
+
+                            _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to json schema"))}
+                        }
+
+                        //Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
+                    //}
+                },
                 _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid format: {}", format))),
             }
 

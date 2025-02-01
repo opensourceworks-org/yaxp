@@ -4,6 +4,7 @@ use roxmltree::Document;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
+use serde_json::json;
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct Schema {
@@ -57,6 +58,17 @@ impl Schema {
         let schema = SparkSchema::new("struct".to_string(), fields);
 
         Ok(schema)
+    }
+
+    pub fn to_json_schema(&self) -> serde_json::Value {
+        json!({
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+                "Main_Element": self.schema_element.to_json_schema()
+            },
+            "required": ["Main_Element"]
+        })
     }
 }
 
@@ -233,6 +245,70 @@ impl SchemaElement {
         };
 
         Ok(field)
+    }
+
+    fn to_json_schema(&self) -> serde_json::Value {
+        let mut properties = serde_json::Map::new();
+        let mut required = vec![];
+
+        for element in &self.elements {
+            let mut field_type = serde_json::Map::new();
+            let base_type = match element.data_type.as_deref() {
+                Some("string") => json!("string"),
+                Some("integer") => json!("integer"),
+                Some("decimal") => json!("number"),
+                Some("date") => json!("string"),
+                Some("dateTime") => json!("string"),
+                _ => json!("string"),
+            };
+
+            let final_type = if element.nullable == Some(true) {
+                json!([base_type, "null"])
+            } else {
+                base_type
+            };
+
+            field_type.insert("type".to_string(), final_type);
+
+            if let Some(max_length) = &element.max_length {
+                field_type.insert("maxLength".to_string(), json!(max_length.parse::<u64>().unwrap_or(255)));
+            }
+            if let Some(min_length) = &element.min_length {
+                field_type.insert("minLength".to_string(), json!(min_length.parse::<u64>().unwrap_or(0)));
+            }
+            if let Some(pattern) = &element.pattern {
+                field_type.insert("pattern".to_string(), json!(pattern));
+            }
+            if let Some(values) = &element.values {
+                field_type.insert("enum".to_string(), json!(values));
+            }
+            if element.data_type.as_deref() == Some("decimal") {
+                if let (Some(fraction_digits), Some(total_digits)) = (
+                    element.fraction_digits.as_deref(),
+                    element.total_digits.as_deref(),
+                ) {
+                    let fraction = fraction_digits.parse::<u64>().unwrap_or(0);
+                    let total = total_digits.parse::<u64>().unwrap_or(0);
+                    let multiple_of = 10f64.powi(-(fraction as i32));
+                    let max_value = 10f64.powi(total as i32) - multiple_of;
+
+                    field_type.insert("multipleOf".to_string(), json!(multiple_of));
+                    field_type.insert("minimum".to_string(), json!(0));
+                    field_type.insert("maximum".to_string(), json!(max_value));
+                }
+            }
+
+            properties.insert(element.name.clone(), serde_json::Value::Object(field_type));
+            if element.nullable == Some(false) {
+                required.push(element.name.clone());
+            }
+        }
+
+        json!({
+            "type": "object",
+            "properties": properties,
+            "required": required,
+        })
     }
 }
 

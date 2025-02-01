@@ -9,6 +9,7 @@ enum OutputFormat {
     Json,
     Arrow,
     Spark,
+    JsonSchema,
 }
 
 /// <yaxp-cli ⚡>
@@ -51,6 +52,10 @@ fn main() {
             OutputFormat::Spark => {
                 let spark_schema = schema.to_spark().unwrap().to_json().unwrap();
                 println!("{}", spark_schema);
+            },
+            OutputFormat::JsonSchema => {
+                let json_schema = schema.to_json_schema();
+                println!("{}", json_schema);
             },
         },
         Err(e) => eprintln!("❌ {}", e),
