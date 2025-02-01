@@ -15,7 +15,7 @@ Converts xsd schema to:
 - [ ] avro
 - [ ] protobuf
 - [ ] jsonschema
-- [ ] json representation of spark schema
+- [x] json representation of spark schema
 - [ ] duckdb
 
 
