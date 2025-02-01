@@ -3,7 +3,8 @@
     <img alt="downloads" src="https://img.shields.io/pypi/dm/pyaxp">
   </a>
 </p>
-![PyPI - Downloads](https://img.shields.io/pypi/dm/pyaxp)]
+
+![PyPI - Downloads](https://img.shields.io/pypi/dm/pyaxp)
 
 # **<yaxp ⚡> Yet Another XSD Parser**
 
