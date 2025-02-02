@@ -1,5 +1,8 @@
 <p align="center">
   <a href="https://crates.io/crates/yaxp-common">
+    <img alt="versions" src="https://img.shields.io/crates/v/yaxp-common">
+  </a>
+  <a href="https://crates.io/crates/yaxp-common">
     <img alt="downloads" src="https://img.shields.io/crates/d/yaxp-common">
   </a>
 </p>

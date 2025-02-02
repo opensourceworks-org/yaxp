@@ -1,5 +1,8 @@
 <p align="center">
   <a href="https://pypi.org/project/pyaxp/">
+    <img alt="version" src="https://img.shields.io/pypi/v/pyaxp.svg">
+  </a>  
+  <a href="https://pypi.org/project/pyaxp/">
     <img alt="downloads" src="https://img.shields.io/pypi/dm/pyaxp">
   </a>
 </p>
@@ -23,27 +26,16 @@ Converts xsd schema to:
 ## User Guide
 ### Python
 - create and activate a Python virtual environment (or use poetry, uv, etc.)
-- install maturin (cargo install, pip install into venv, etc.)
+- install pyaxp 
 
 ```shell
-(.venv)  ~/projects/yaxp/crates/pyaxp $
-🔗 Found pyo3 bindings
-🐍 Found CPython 3.12 at ~/projects/yaxp/crates/pyaxp/.venv/bin/python
-📡 Using build options features from pyproject.toml
-warning: ~/projects/yaxp/Cargo.toml: unused manifest key: workspace.name
-    Blocking waiting for file lock on build directory
-   Compiling pyo3-build-config v0.23.4
-   Compiling pyo3-macros-backend v0.23.4
-   Compiling pyo3-ffi v0.23.4
-   Compiling pyo3 v0.23.4
-   Compiling pyo3-macros v0.23.4
-   Compiling yaxp-common v0.1.0 (~/Users/jeroen~/projects/yaxp/crates/yaxp-common)
-   Compiling pyaxp v0.1.0 (~/Users/jeroen~/projects/yaxp/crates/pyaxp)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.03s
-📦 Built wheel for CPython 3.12 to /var/folders/gr/gl3fzn_n0_g4fzpcfv2g40gh0000gn/T/.tmp3wQ0CY/pyaxp-0.1.0-cp312-cp312-macosx_11_0_arm64.whl
-✏️  Setting installed package as editable
-🛠 Installed pyaxp-0.1.0
-(.venv)  ~/projects/yaxp/crates/pyaxp $
+(venv) $ uv pip install pyaxp
+Using Python 3.12.3 environment at venv
+Resolved 1 package in 323ms
+Prepared 1 package in 140ms
+Installed 1 package in 2ms
+ + pyaxp==0.1.6
+(venv) $ 
 ```
 
 ```python
