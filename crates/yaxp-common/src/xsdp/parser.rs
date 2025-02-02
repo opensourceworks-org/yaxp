@@ -5,7 +5,9 @@ use serde::{Deserialize, Serialize};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::fs;
+use std::sync::{Arc, Mutex};
 use serde_json::json;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct Schema {
@@ -531,25 +533,56 @@ pub fn parse_file(xsd_file: &str) -> Result<Schema, Box<dyn std::error::Error>> 
     let xml_content = fs::read_to_string(xsd_file).expect("Failed to read XSD file");
     let doc = Document::parse(&xml_content).expect("Failed to parse XML");
 
-    let mut global_types = HashMap::new();
+    let global_types = Arc::new(Mutex::new(HashMap::new()));
 
-    for node in doc.root().descendants() {
-        if node.tag_name().name() == "simpleType" {
-            if let Some(name) = node.attribute("name") {
-                for child in node.children() {
-                    if child.tag_name().name() == "restriction" {
-                        global_types.insert(name.to_string(), extract_constraints(child));
+    doc.root().descendants()
+        .par_bridge()
+        .for_each(|node| {
+            if node.tag_name().name() == "simpleType" {
+                if let Some(name) = node.attribute("name") {
+                    for child in node.children() {
+                        if child.tag_name().name() == "restriction" {
+                            let mut map = global_types.lock().unwrap();
+                            map.insert(name.to_string(), extract_constraints(child));
+                            // global_types.insert(name.clone().to_string(), extract_constraints(child));
+                        }
                     }
                 }
             }
-        }
-    }
+        });
+        // if node.tag_name().name() == "simpleType" {
+        //     if let Some(name) = node.attribute("name") {
+        //         for child in node.children() {
+        //             if child.tag_name().name() == "restriction" {
+        //                 global_types.insert(name.to_string(), extract_constraints(child));
+        //             }
+        //         }
+        //     }
+        // }
+
+    let final_map = Arc::try_unwrap(global_types)
+        .expect("Arc should have no other refs")
+        .into_inner()
+        .expect("Mutex should be unlocked");
+
+
+    // for node in doc.root().descendants() {
+    //     if node.tag_name().name() == "simpleType" {
+    //         if let Some(name) = node.attribute("name") {
+    //             for child in node.children() {
+    //                 if child.tag_name().name() == "restriction" {
+    //                     global_types.insert(name.to_string(), extract_constraints(child));
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     let mut schema_element = None;
 
     for node in doc.root().descendants() {
         if node.tag_name().name() == "element" {
-            schema_element = parse_element(node, node.attribute("name").unwrap(), &global_types);
+            schema_element = parse_element(node, node.attribute("name").unwrap(), &final_map);
             break;
         }
     }

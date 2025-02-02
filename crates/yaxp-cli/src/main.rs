@@ -48,7 +48,8 @@ fn main() {
             }
             OutputFormat::Arrow => {
                 let arrow_schema = schema.to_arrow().unwrap();
-                dbg!(arrow_schema);
+                // dbg!(arrow_schema);
+                println!("{}", arrow_schema.to_string());
             },
             OutputFormat::Spark => {
                 let spark_schema = schema.to_spark().unwrap().to_json().unwrap();
