@@ -10,7 +10,6 @@
   </a>
 </p>
 
-
 # **<yaxp ⚡> Yet Another XSD Parser**
 
 
