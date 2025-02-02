@@ -37,7 +37,7 @@ impl Schema {
             fields.push(field);
         }
 
-        Ok(ArrowSchema::new(fields))
+        Ok( ArrowSchema::new(fields))
     }
 
     pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {

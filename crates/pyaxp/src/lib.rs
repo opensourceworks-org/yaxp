@@ -61,7 +61,7 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
                     for (key, value) in duckdb_indexmap {
                         duckdb_schema.set_item(key, value)?;
                     }
-                    
+
                     match duckdb_schema.into_pyobject(py) {
                         Ok(py_duckdb_schema) => Ok(py_duckdb_schema.into()),
 
