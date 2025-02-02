@@ -46,9 +46,9 @@ crates
 
 ## Downloads
 
-- [yaxp-common](https://crates.io/crates/yaxp-common) on crates.io
-- [yaxp-cli](https://crates.io/crates/yaxp-cli) on crates.io
-- [pyaxp](https://pypi.org/project/pyaxp/) on pypi.org
+- [yaxp-common](https://crates.io/crates/yaxp-common) main lib crate, core
+- [yaxp-cli](https://crates.io/crates/yaxp-cli) cli interface on yaxp-common
+- [pyaxp](https://pypi.org/project/pyaxp/) python bindings
 
 
 
