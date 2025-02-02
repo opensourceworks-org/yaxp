@@ -12,10 +12,11 @@ on:
       - master
     tags:
       - '*'
+    paths:
+      - 'crates/pyaxp/**'
   pull_request:
   workflow_dispatch:
-  paths:
-    - 'crates/pyaxp/**'
+
 
 permissions:
   contents: read
