@@ -22,41 +22,41 @@ permissions:
   contents: read
 
 jobs:
-  linux:
-    runs-on: ${{ matrix.platform.runner }}
-    # Defaults apply only to run: steps (not to actions that use "uses:")
-    defaults:
-      run:
-        working-directory: crates/pyaxp
-    strategy:
-      matrix:
-        platform:
-          - runner: ubuntu-22.04
-            target: x86_64
-          - runner: ubuntu-22.04
-            target: aarch64
-          - runner: ubuntu-22.04
-            target: armv7
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.x
-      - name: Build wheels
-        uses: PyO3/maturin-action@v1
-        with:
-          working-directory: crates/pyaxp
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter
-          sccache: 'true'
-          manylinux: auto
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-linux-${{ matrix.platform.target }}
-          # Note: dist is created inside crates/pyaxp, so we give the full path.
-          path: crates/pyaxp/dist
+#  linux:
+#    runs-on: ${{ matrix.platform.runner }}
+#    # Defaults apply only to run: steps (not to actions that use "uses:")
+#    defaults:
+#      run:
+#        working-directory: crates/pyaxp
+#    strategy:
+#      matrix:
+#        platform:
+#          - runner: ubuntu-22.04
+#            target: x86_64
+#          - runner: ubuntu-22.04
+#            target: aarch64
+#          - runner: ubuntu-22.04
+#            target: armv7
+#
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: actions/setup-python@v5
+#        with:
+#          python-version: 3.x
+#      - name: Build wheels
+#        uses: PyO3/maturin-action@v1
+#        with:
+#          working-directory: crates/pyaxp
+#          target: ${{ matrix.platform.target }}
+#          args: --release --out dist --find-interpreter
+#          sccache: 'true'
+#          manylinux: auto
+#      - name: Upload wheels
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: wheels-linux-${{ matrix.platform.target }}
+#          # Note: dist is created inside crates/pyaxp, so we give the full path.
+#          path: crates/pyaxp/dist
 
 #  musllinux:
 #    runs-on: ${{ matrix.platform.runner }}
@@ -176,7 +176,7 @@ jobs:
       run:
         working-directory: crates/pyaxp
     if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
-    needs: [linux, sdist]
+    needs: [sdist]
     # needs: [linux, musllinux, windows, macos, sdist]
     permissions:
       # Use to sign the release artifacts
@@ -187,14 +187,14 @@ jobs:
       attestations: write
     steps:
       - uses: actions/download-artifact@v4
-      - name: List directory structure
-        run: |
-          echo "Listing root:"
-          pwd 
-          echo "Listing crates directory:"
-          ls -la .
-          echo "Listing pyaxp directory:"
-          ls -la crates/pyaxp
+      - name: List repository root
+        run: ls -la ${{ github.workspace }}
+        continue-on-error: true
+
+      - name: List crates directory (if exists)
+        run: ls -la ${{ github.workspace }}/crates
+        continue-on-error: true
+
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
         with:
