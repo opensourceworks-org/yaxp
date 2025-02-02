@@ -192,11 +192,11 @@ jobs:
         continue-on-error: true
 
       - name: List crates directory (if exists)
-        run: ls -la ${{ github.workspace }}/..
+        run: ls -la ${{ github.workspace }}/../..
         continue-on-error: true
 
       - name: List crates directory (if exists)
-        run: ls -la ${{ github.workspace }}/../crates/pyaxp
+        run: ls -la ${{ github.workspace }}/../../crates/pyaxp
         continue-on-error: true
 
       - name: Generate artifact attestation
