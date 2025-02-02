@@ -5,6 +5,10 @@
   <a href="https://crates.io/crates/yaxp-cli">
     <img alt="downloads" src="https://img.shields.io/crates/d/yaxp-cli">
   </a>
+  <a href="https://github.com/opensourceworks-org/yaxp/blob/main/crates/yaxp-cli/README.md">
+    <img alt="pipelines" src="https://img.shields.io/github/actions/workflow/status/opensourceworks-org/yaxp/yaxp-cli-ci.yml?logo=github">
+  </a>
+
 </p>
 
 # **<yaxp ⚡> Yet Another XSD Parser**

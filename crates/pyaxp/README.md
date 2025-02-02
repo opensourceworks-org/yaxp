@@ -5,6 +5,9 @@
   <a href="https://pypi.org/project/pyaxp/">
     <img alt="downloads" src="https://img.shields.io/pypi/dm/pyaxp">
   </a>
+  <a href="https://pypi.org/project/pyaxp/">
+    <img alt="pipelines" src="https://img.shields.io/github/actions/workflow/status/opensourceworks-org/yaxp/pyaxp-ci.yml?logo=github">
+  </a>
 </p>
 
 
