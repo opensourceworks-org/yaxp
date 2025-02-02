@@ -12,7 +12,6 @@
 
 # **<yaxp ⚡> Yet Another XSD Parser**
 
-
 ## Introduction
 Using [roxmltree](https://github.com/RazrFalcon/roxmltree) to parse XML files. 
 
