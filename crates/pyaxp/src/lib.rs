@@ -320,8 +320,8 @@ fn parse_xsd(py: Python, xsd_file: &str, format: SchemaFormat) -> PyResult<PyObj
                     }
                     Ok(py_schema.into_pyobject(py)?.into())
                 },
-                _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                    format!("Invalid format: {}. Supported formats: arrow, duckdb, json, json_schema, polars, spark.", format))),
+                // _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                //     format!("Invalid format: {}. Supported formats: arrow, duckdb, json, json_schema, polars, spark.", format))),
             }
 
         }

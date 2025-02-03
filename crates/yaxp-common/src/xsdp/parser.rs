@@ -12,6 +12,29 @@ use polars::datatypes::{DataType as PolarsDataType, PlSmallStr};
 use polars::datatypes::TimeUnit as PolarsTimeUnit;
 use polars::prelude::{Schema as PolarsSchema};
 
+#[derive(Serialize, Deserialize, Debug)]
+pub enum TimestampPrecision {
+    Ms,
+    Ns,
+    Us
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TimestampOptions {
+    pub precision: Option<TimestampPrecision>,
+    pub timezone: Option<String>,
+}
+
+impl TimestampOptions {
+    pub fn new(precision: Option<TimestampPrecision>, timezone: Option<String>) -> Self {
+        let precision = Some(precision.unwrap_or(TimestampPrecision::Ns));
+        TimestampOptions {
+            precision,
+            timezone,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct Schema {
     pub(crate) namespace: Option<String>,
