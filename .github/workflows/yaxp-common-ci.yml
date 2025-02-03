@@ -1,4 +1,4 @@
-name: Publish yaxp-common to crates.io
+name: Build & publish yaxp-common to crates.io
 
 on:
   push:
@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'crates/yaxp-common/src/**'
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   publish:
