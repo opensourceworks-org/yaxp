@@ -164,7 +164,7 @@ impl PyArrowSchemaConversion for Schema {
         };
 
         // IntoPyDict to create a keyword argument dictionary.
-        let kwargs = [("metadata", py_metadata)].into_py_dict(py)?; // Unwrap the result with `?`
+        let kwargs = [("metadata", py_metadata)].into_py_dict(py)?;
         // passing a reference to kwargs
         let schema_obj = pa.getattr("schema")?.call((py_fields,), Some(&kwargs))?;
         Ok(schema_obj.into())
