@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'crates/yaxp-common/**'
+      - 'crates/yaxp-common/src/**'
 
 jobs:
   publish:
