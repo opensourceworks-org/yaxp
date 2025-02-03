@@ -11,6 +11,7 @@ enum OutputFormat {
     Spark,
     JsonSchema,
     Duckdb,
+    Polars,
 }
 
 /// <yaxp-cli ⚡>
@@ -62,6 +63,10 @@ fn main() {
             OutputFormat::Duckdb => {
                 let duckdb_schema = schema.to_duckdb_schema();
                 println!("{:?}", duckdb_schema);
+            },
+            OutputFormat::Polars => {
+                let polars_schema = schema.to_polars();
+                println!("{:?}", polars_schema);
             },
         },
         Err(e) => eprintln!("❌ {}", e),

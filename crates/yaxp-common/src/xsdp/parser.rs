@@ -8,6 +8,9 @@ use std::fs;
 use std::sync::{Arc, Mutex};
 use serde_json::json;
 use rayon::iter::{ParallelBridge, ParallelIterator};
+use polars::datatypes::{DataType as PolarsDataType, PlSmallStr};
+use polars::datatypes::TimeUnit as PolarsTimeUnit;
+use polars::prelude::{Schema as PolarsSchema};
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct Schema {
@@ -77,6 +80,41 @@ impl Schema {
     pub fn to_duckdb_schema(&self) -> IndexMap<String, String> {
         self.schema_element.to_duckdb_schema()
     }
+
+    pub fn to_polars(&self) -> PolarsSchema {
+        let mut schema: PolarsSchema = Default::default();
+        for element in &self.schema_element.elements {
+            //let field = polars::datatypes::Field::new(PlSmallStr::from(&element.name), element.to_polars());
+            schema.insert(PlSmallStr::from(&element.name), element.to_polars());
+        };
+
+        schema
+
+
+        // let fields = self.schema_element.elements.iter().map(|element| {
+        //     polars::datatypes::Field::new(PlSmallStr::from(&element.name), element.to_polars())
+        // }).collect();
+        // polars::prelude::Schema::new(fields)
+        // let fields_vec = if !self.schema_element.elements.is_empty() {
+        //     self
+        //         .schema_element
+        //         .elements
+        //         .iter()
+        //         .map(|e| {polars::datatypes::Field::new(PlSmallStr::from(&e.name), e.to_polars())})
+        //         .collect()
+        // } else {
+        //     Vec::new()
+        // };
+        //
+        //
+        // // Construct the Polars schema using the IndexMap.
+        // let polars_schema: PolarsSchema = fields_vec.into();
+        // polars_schema
+
+
+    }
+
+
 }
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
@@ -339,6 +377,41 @@ impl SchemaElement {
         }
 
         columns
+    }
+
+    fn to_polars(&self) -> PolarsDataType {
+        match self.data_type.as_deref() {
+            None => PolarsDataType::String,
+            Some("string") => PolarsDataType::String,
+            Some("int") | Some("integer") => PolarsDataType::Int64,
+            Some("float") | Some("double") => PolarsDataType::Float64,
+            Some("boolean") | Some("bool") => PolarsDataType::Boolean,
+            Some("date") => PolarsDataType::Date,
+            Some("datetime") | Some("dateTime") => PolarsDataType::Datetime(PolarsTimeUnit::Milliseconds, None),
+            Some("time") => PolarsDataType::Time,
+            Some("decimal") => {
+                // Parse the total_digits as precision and fraction_digits as scale.
+                // Fallback to defaults if parsing fails.
+                let precision = self
+                    .total_digits
+                    .as_ref()
+                    .and_then(|s| s.parse::<usize>().ok())
+                    .unwrap_or(38);
+                let scale = self
+                    .fraction_digits
+                    .as_ref()
+                    .and_then(|s| s.parse::<usize>().ok())
+                    .unwrap_or(10);
+                PolarsDataType::Decimal(Some(precision), Some(scale))
+            }
+            Some(other) => {
+                eprintln!(
+                    "Warning: Unrecognized data type '{}', defaulting to String.",
+                    other
+                );
+                PolarsDataType::String
+            }
+        }
     }
 }
 

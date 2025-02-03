@@ -329,6 +329,32 @@ Field10: [["G1","G2",""]]
 >>>
 ```
 
+### with polars
+```python
+>>> import polars as pl
+>>> from pyaxp import parse_xsd
+>>> schema = parse_xsd("example.xsd", "polars")
+>>> schema
+{'Field1': String, 'Field2': String, 'Field3': String, 'Field4': String, 'Field5': Datetime(time_unit='ms', time_zone=None), 'Field6': Date, 'Field7': Date, 'Field8': String, 'Field9': String, 'Field10': String, 'Field11': String, 'Field12': Decimal(precision=25, scale=7), 'Field13': String, 'Field14': String, 'Field15': String, 'Field16': String, 'Field17': Date, 'Field18': String, 'Field19': String, 'Field20': Decimal(precision=38, scale=10), 'Field21': Int64}
+>>> df = pl.read_c
+pl.read_clipboard(   pl.read_csv(         pl.read_csv_batched(
+>>> df = pl.read_csv("example-data.csv", schema=schema)
+>>> df
+shape: (3, 21)
+┌─────────────────────────────────┬────────┬────────┬────────┬───┬─────────┬─────────┬────────────────┬─────────┐
+│ Field1                          ┆ Field2 ┆ Field3 ┆ Field4 ┆ … ┆ Field18 ┆ Field19 ┆ Field20        ┆ Field21 │
+│ ---                             ┆ ---    ┆ ---    ┆ ---    ┆   ┆ ---     ┆ ---     ┆ ---            ┆ ---     │
+│ str                             ┆ str    ┆ str    ┆ str    ┆   ┆ str     ┆ str     ┆ decimal[38,10] ┆ i64     │
+╞═════════════════════════════════╪════════╪════════╪════════╪═══╪═════════╪═════════╪════════════════╪═════════╡
+│ A1;B1;C1;D1;2024-02-01T10:30:0… ┆ null   ┆ null   ┆ null   ┆ … ┆ null    ┆ null    ┆ null           ┆ null    │
+│ A2;B2;C2;;2024-02-01T11:00:00.… ┆ null   ┆ null   ┆ null   ┆ … ┆ null    ┆ null    ┆ null           ┆ null    │
+│ A3;B3;C3;D3;2024-02-01T12:15:0… ┆ null   ┆ null   ┆ null   ┆ … ┆ null    ┆ null    ┆ null           ┆ null    │
+└─────────────────────────────────┴────────┴────────┴────────┴───┴─────────┴─────────┴────────────────┴─────────┘
+>>> df.dtypes
+[String, String, String, String, Datetime(time_unit='ms', time_zone=None), Date, Date, String, String, String, String, Decimal(precision=25, scale=7), String, String, String, String, Date, String, String, Decimal(precision=38, scale=10), Int64]
+>>>
+```
+
 ## TODO
 
 - [x] Add pyo3/maturin support
