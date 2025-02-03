@@ -1,52 +1,129 @@
 use arrow::datatypes::{DataType, Field, Schema as ArrowSchema, TimeUnit};
-use pyo3::IntoPyObject;
+use pyo3::{FromPyObject, IntoPyObject, PyAny, PyObject, PyResult, Python};
 use roxmltree::Document;
 use serde::{Deserialize, Serialize};
 use indexmap::IndexMap;
 use std::collections::HashMap;
-use std::fs;
+use std::{fmt, fs};
+use std::convert::Infallible;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use serde_json::json;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use polars::datatypes::{DataType as PolarsDataType, PlSmallStr};
 use polars::datatypes::TimeUnit as PolarsTimeUnit;
 use polars::prelude::{Schema as PolarsSchema};
+use pyo3::exceptions::PyValueError;
+use pyo3::prelude::{PyAnyMethods, PyDictMethods};
+use pyo3::types::{PyDict, PyString};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum TimestampPrecision {
+pub enum TimestampUnit {
     Ms,
+    Us,
     Ns,
-    Us
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct TimestampOptions {
-    pub precision: Option<TimestampPrecision>,
-    pub timezone: Option<String>,
-}
-
-impl TimestampOptions {
-    pub fn new(precision: Option<TimestampPrecision>, timezone: Option<String>) -> Self {
-        let precision = Some(precision.unwrap_or(TimestampPrecision::Ns));
-        TimestampOptions {
-            precision,
-            timezone,
+impl FromStr for TimestampUnit {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ns" => Ok(TimestampUnit::Ns),
+            "ms" => Ok(TimestampUnit::Ms),
+            "us" => Ok(TimestampUnit::Us),
+            _ => Err(format!("Invalid precision: {}. Available: s, ms, us, ns", s)),
         }
     }
 }
+
+impl<'py> IntoPyObject<'py> for TimestampUnit {
+    type Output = <&'py str as IntoPyObject<'py>>::Output;
+    type Target = <&'py str as IntoPyObject<'py>>::Target;
+    type Error = Infallible;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<pyo3::Bound<'py, PyString>, Infallible> {
+        let s = match self {
+            TimestampUnit::Ms => "ms",
+            TimestampUnit::Us => "us",
+            TimestampUnit::Ns => "ns",
+        };
+        s.into_pyobject(py)
+    }
+}
+
+impl fmt::Display for TimestampUnit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+
+// Define the TimestampOptions struct.
+#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+pub struct TimestampOptions {
+    pub time_unit: Option<TimestampUnit>,
+    pub time_zone: Option<String>,
+}
+
+impl<'source> FromPyObject<'source> for TimestampUnit {
+    fn extract_bound(bound: &pyo3::Bound<'source, PyAny>) -> PyResult<Self> {
+        let s: String = <String as FromPyObject>::extract_bound(bound)?;
+        TimestampUnit::from_str(&s).map_err(|e| PyValueError::new_err(e))
+    }
+}
+
+
+impl<'source> FromPyObject<'source> for TimestampOptions {
+    fn extract_bound(bound: &pyo3::Bound<'source, PyAny>) -> PyResult<Self> {
+        // Get the underlying PyAny and downcast it to a PyDict.
+        let obj = bound.as_ref();
+        let dict = obj.downcast::<PyDict>()?;
+
+        // First, extract the result from get_item before pattern matching.
+        let precision_item = dict.get_item("time_unit")?;
+        let time_unit: Option<String> = if let Some(item) = precision_item {
+            Some(item.extract()?)
+        } else {
+            None
+        };
+
+        let timezone_item = dict.get_item("time_zone")?;
+        let time_zone: Option<String> = if let Some(item) = timezone_item {
+            Some(item.extract()?)
+        } else {
+            None
+        };
+
+        // Convert the precision string (if any) into TimestampPrecision.
+        let time_unit = match time_unit {
+            Some(s) => Some(s.parse().map_err(|e: String| PyValueError::new_err(e))?),
+            None => None,
+        };
+
+        Ok(TimestampOptions {
+            time_unit,
+            time_zone,
+        })
+    }
+}
+
+
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct Schema {
     pub(crate) namespace: Option<String>,
     #[serde(rename = "schemaElement")]
     pub schema_element: SchemaElement,
+    pub timestamp_options: Option<TimestampOptions>,
 }
 
 impl Schema {
-    pub fn new(namespace: Option<String>, schema_element: SchemaElement) -> Self {
+    pub fn new(namespace: Option<String>, schema_element: SchemaElement,
+               timestamp_options: Option<TimestampOptions>) -> Self {
         Schema {
             namespace,
             schema_element,
+            timestamp_options,
         }
     }
 
@@ -106,9 +183,13 @@ impl Schema {
 
     pub fn to_polars(&self) -> PolarsSchema {
         let mut schema: PolarsSchema = Default::default();
+        let ts_options = match &self.timestamp_options {
+            Some(options) => Some(options.into()),
+            None => None,
+        };
         for element in &self.schema_element.elements {
             //let field = polars::datatypes::Field::new(PlSmallStr::from(&element.name), element.to_polars());
-            schema.insert(PlSmallStr::from(&element.name), element.to_polars());
+            schema.insert(PlSmallStr::from(&element.name), element.to_polars(&ts_options));
         };
 
         schema
@@ -402,7 +483,8 @@ impl SchemaElement {
         columns
     }
 
-    fn to_polars(&self) -> PolarsDataType {
+    fn to_polars(&self, timestamp_options: &Option<TimestampOptions>) -> PolarsDataType {
+
         match self.data_type.as_deref() {
             None => PolarsDataType::String,
             Some("string") => PolarsDataType::String,
@@ -410,7 +492,22 @@ impl SchemaElement {
             Some("float") | Some("double") => PolarsDataType::Float64,
             Some("boolean") | Some("bool") => PolarsDataType::Boolean,
             Some("date") => PolarsDataType::Date,
-            Some("datetime") | Some("dateTime") => PolarsDataType::Datetime(PolarsTimeUnit::Milliseconds, None),
+            Some("datetime") | Some("dateTime") => {
+                let time_unit = timestamp_options
+                    .as_ref()
+                    .and_then(|options| options.time_unit.as_ref())
+                    .map(|unit| match unit {
+                        TimestampUnit::Ms => PolarsTimeUnit::Milliseconds,
+                        TimestampUnit::Us => PolarsTimeUnit::Microseconds,
+                        TimestampUnit::Ns => PolarsTimeUnit::Nanoseconds,
+                    })
+                    .unwrap_or(PolarsTimeUnit::Nanoseconds);
+                let timezone = timestamp_options
+                    .as_ref()
+                    .and_then(|options| options.time_zone.as_ref())
+                    .map(|s| s.to_string());
+                PolarsDataType::Datetime(time_unit, timezone.into())
+            },
             Some("time") => PolarsDataType::Time,
             Some("decimal") => {
                 // Parse the total_digits as precision and fraction_digits as scale.
@@ -625,7 +722,8 @@ fn parse_element(
     })
 }
 
-pub fn parse_file(xsd_file: &str) -> Result<Schema, Box<dyn std::error::Error>> {
+pub fn parse_file(xsd_file: &str, timestamp_options: Option<TimestampOptions>) -> Result<Schema, Box<dyn std::error::Error>> {
+    dbg!(&timestamp_options);
     let xml_content = fs::read_to_string(xsd_file).expect("Failed to read XSD file");
     let doc = Document::parse(&xml_content).expect("Failed to parse XML");
 
@@ -646,15 +744,6 @@ pub fn parse_file(xsd_file: &str) -> Result<Schema, Box<dyn std::error::Error>> 
                 }
             }
         });
-        // if node.tag_name().name() == "simpleType" {
-        //     if let Some(name) = node.attribute("name") {
-        //         for child in node.children() {
-        //             if child.tag_name().name() == "restriction" {
-        //                 global_types.insert(name.to_string(), extract_constraints(child));
-        //             }
-        //         }
-        //     }
-        // }
 
     let final_map = Arc::try_unwrap(global_types)
         .expect("Arc should have no other refs")
@@ -687,6 +776,7 @@ pub fn parse_file(xsd_file: &str) -> Result<Schema, Box<dyn std::error::Error>> 
         let schema = Schema {
             namespace: None,
             schema_element,
+            timestamp_options,
         };
 
         Ok(schema)

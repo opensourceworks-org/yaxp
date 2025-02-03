@@ -12,6 +12,10 @@ use std::str::FromStr;
 use pyo3::conversion::FromPyObject;
 use pyo3::types::PyAny;
 use std::fmt;
+use yaxp_common::xsdp::parser::{TimestampUnit, TimestampOptions};
+
+
+
 
 #[derive(Debug, Clone)]
 enum SchemaFormat {
@@ -256,8 +260,10 @@ impl PyArrowSchemaConversion for Schema {
 
 
 #[pyfunction]
-fn parse_xsd(py: Python, xsd_file: &str, format: SchemaFormat) -> PyResult<PyObject> {
-    let result = parse_file(xsd_file);
+fn parse_xsd(py: Python, xsd_file: &str, format: SchemaFormat,
+             timestamp_options: Option<TimestampOptions>,) -> PyResult<PyObject> {
+    let result = parse_file(xsd_file, timestamp_options);
+
 
     match result {
         Ok(schema) => {
