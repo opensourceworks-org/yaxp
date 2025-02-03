@@ -227,15 +227,12 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
                 }
                 "arrow" => {
                     match schema.to_arrow() {
-
                         Ok(arrow_schema) => {
                             match arrow_schema.to_pyarrow_schema(py)  {
                                 Ok(py_arrow) => Ok(py_arrow.into()),
-
                                 _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to arrow"))}
                             }
                         }
-
                         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
                     }
                 }
@@ -244,7 +241,6 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
                         Ok(spark) => {
                             match spark.to_json().unwrap().into_pyobject(py) {
                                 Ok(py_spark) => Ok(py_spark.into()),
-
                                 _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to spark"))}
                             }
                         }
@@ -255,12 +251,8 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
                     let json_schema = schema.to_json_schema();
                         match json_schema.to_string().into_pyobject(py) {
                             Ok(py_json_schema) => Ok(py_json_schema.into()),
-
                             _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to json schema"))}
                         }
-
-                        //Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
-                    //}
                 },
                 "duckdb" => {
                     let duckdb_indexmap = schema.to_duckdb_schema();
@@ -268,10 +260,8 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
                     for (key, value) in duckdb_indexmap {
                         duckdb_schema.set_item(key, value)?;
                     }
-
                     match duckdb_schema.into_pyobject(py) {
                         Ok(py_duckdb_schema) => Ok(py_duckdb_schema.into()),
-
                         _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to duckdb schema"))}
                     }
                 },
@@ -284,15 +274,14 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
                         py_schema.set_item(name.to_string(), py_dtype)?;
                     }
                     Ok(py_schema.into_pyobject(py)?.into())
-
                 },
-                _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid format: {}", format))),
+                _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                    format!("Invalid format: {}. Supported formats: arrow, duckdb, json, json_schema, polars, spark.", format))),
             }
 
         }
         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
     }
-
 }
 
 // main entrypoint for python module
