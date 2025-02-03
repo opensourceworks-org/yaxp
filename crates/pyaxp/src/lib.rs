@@ -75,7 +75,7 @@ fn rust_to_pyarrow_dtype(py: Python, dt: &arrow::datatypes::DataType) -> PyResul
             pa.getattr("decimal128")?.call1((precision, scale))
         }
         List(field) => {
-            // For list types, convert the inner field first.
+            // for list types, we have to convert the inner field first
             let field_obj = field.to_pyarrow_field(py)?;
             pa.getattr("list_")?.call1((field_obj,))
         }
@@ -84,14 +84,13 @@ fn rust_to_pyarrow_dtype(py: Python, dt: &arrow::datatypes::DataType) -> PyResul
             pa.getattr("large_list")?.call1((field_obj,))
         }
         Struct(fields) => {
-            // Convert each inner field.
             let py_fields = fields
                 .iter()
                 .map(|f| f.to_pyarrow_field(py))
                 .collect::<PyResult<Vec<PyObject>>>()?;
             pa.getattr("struct")?.call1((py_fields,))
         }
-        // Add more conversions as needed.
+        // more conversions ...
         _ => {
             return Err(PyNotImplementedError::new_err(format!(
                 "Data type {:?} not implemented",
@@ -108,7 +107,7 @@ fn convert_metadata<'py>(py: Python<'py>, metadata: &HashMap<String, String>) ->
     } else {
         let dict = PyDict::new(py);
         for (k, v) in metadata.iter() {
-            // k and v are both &String; these automatically convert to Python strings.
+            // k and v are both &String; these automatically convert to Python strings
             dict.set_item(k, v).unwrap();
         }
         dict.into()
@@ -131,12 +130,10 @@ fn rust_to_pyarrow_field(py: Python, field: &Field) -> PyResult<PyObject> {
     Ok(py_field.into())
 }
 
-/// Define an extension trait for converting an Arrow Field to a PyArrow field.
 pub trait PyArrowFieldConversion {
     fn to_pyarrow_field(&self, py: Python) -> PyResult<PyObject>;
 }
 
-/// Implement the extension trait for arrow::datatypes::Field.
 impl PyArrowFieldConversion for Field {
     fn to_pyarrow_field(&self, py: Python) -> PyResult<PyObject> {
         rust_to_pyarrow_field(py, self)
@@ -150,14 +147,12 @@ pub trait PyArrowSchemaConversion {
 impl PyArrowSchemaConversion for Schema {
     fn to_pyarrow_schema(&self, py: Python) -> PyResult<PyObject> {
         let pa = PyModule::import(py, "pyarrow")?;
-        // Convert each field in the schema.
         let py_fields: Vec<PyObject> = self
             .fields()
             .iter()
             .map(|field| field.to_pyarrow_field(py))
             .collect::<PyResult<Vec<_>>>()?;
 
-        // Convert schema metadata.
         let py_metadata = {
             let metadata = self.metadata();
             if metadata.is_empty() {
@@ -171,9 +166,9 @@ impl PyArrowSchemaConversion for Schema {
             }
         };
 
-        // Use IntoPyDict to create a keyword argument dictionary.
+        // IntoPyDict to create a keyword argument dictionary.
         let kwargs = [("metadata", py_metadata)].into_py_dict(py)?; // Unwrap the result with `?`
-        // Now pass a reference to kwargs.
+        // passing a reference to kwargs
         let schema_obj = pa.getattr("schema")?.call((py_fields,), Some(&kwargs))?;
         Ok(schema_obj.into())
     }
