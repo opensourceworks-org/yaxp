@@ -8,6 +8,51 @@ use pyo3::exceptions::{PyNotImplementedError, PyValueError};
 use pyo3::types::IntoPyDict;
 use polars::datatypes::DataType as PolarsDataType;
 use polars;
+use std::str::FromStr;
+use pyo3::conversion::FromPyObject;
+use pyo3::types::PyAny;
+use std::fmt;
+
+#[derive(Debug, Clone)]
+enum SchemaFormat {
+    Arrow,
+    Duckdb,
+    Polars,
+    Json,
+    JsonSchema,
+    Spark,
+}
+
+impl FromStr for SchemaFormat {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "arrow" => Ok(SchemaFormat::Arrow),
+            "duckdb" => Ok(SchemaFormat::Duckdb),
+            "polars" => Ok(SchemaFormat::Polars),
+            "json" => Ok(SchemaFormat::Json),
+            "json_schema" => Ok(SchemaFormat::JsonSchema),
+            "spark" => Ok(SchemaFormat::Spark),
+            _ => Err(format!("Invalid format: {}, Supported formats: arrow, duckdb, json, json_schema, polars, spark. ", s)),
+        }
+    }
+}
+
+impl fmt::Display for SchemaFormat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // For simplicity, just delegate to Debug formatting.
+        write!(f, "{:?}", self)
+    }
+}
+
+// Implement FromPyObject for Format, including the new extract_bound method.
+impl<'source> FromPyObject<'source> for SchemaFormat {
+    fn extract_bound(bound: &pyo3::Bound<'source, PyAny>) -> PyResult<Self> {
+        // Here we call the existing implementation for &str.
+        let s: String = <String as FromPyObject>::extract_bound(bound)?;
+        SchemaFormat::from_str(&s).map_err(|e| PyValueError::new_err(e))
+    }
+}
 
 fn convert_polars_dtype_to_pyobject(py: Python, dtype: &PolarsDataType) -> PyResult<PyObject> {
     // import python polars module
@@ -211,21 +256,21 @@ impl PyArrowSchemaConversion for Schema {
 
 
 #[pyfunction]
-fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
+fn parse_xsd(py: Python, xsd_file: &str, format: SchemaFormat) -> PyResult<PyObject> {
     let result = parse_file(xsd_file);
 
     match result {
         Ok(schema) => {
 
             match format {
-                "json" => {
+                SchemaFormat::Json => {
                     match schema.into_pyobject(py) {
                         Ok(py_schema) => Ok(py_schema.into()),
                         Err(e) => Err(e),
                     }
 
                 }
-                "arrow" => {
+                SchemaFormat::Arrow => {
                     match schema.to_arrow() {
                         Ok(arrow_schema) => {
                             match arrow_schema.to_pyarrow_schema(py)  {
@@ -236,7 +281,7 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
                         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
                     }
                 }
-                "spark" => {
+                SchemaFormat::Spark => {
                     match schema.to_spark() {
                         Ok(spark) => {
                             match spark.to_json().unwrap().into_pyobject(py) {
@@ -247,14 +292,14 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
                         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
                     }
                 },
-                "json_schema" => {
+                SchemaFormat::JsonSchema => {
                     let json_schema = schema.to_json_schema();
                         match json_schema.to_string().into_pyobject(py) {
                             Ok(py_json_schema) => Ok(py_json_schema.into()),
                             _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to json schema"))}
                         }
                 },
-                "duckdb" => {
+                SchemaFormat::Duckdb => {
                     let duckdb_indexmap = schema.to_duckdb_schema();
                     let duckdb_schema = PyDict::new(py);
                     for (key, value) in duckdb_indexmap {
@@ -265,7 +310,7 @@ fn parse_xsd(py: Python, xsd_file: &str, format: &str) -> PyResult<PyObject> {
                         _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to duckdb schema"))}
                     }
                 },
-                "polars" => {
+                SchemaFormat::Polars => {
                     let polars_schema = schema.to_polars();
                     let py_schema = PyDict::new(py);
 
