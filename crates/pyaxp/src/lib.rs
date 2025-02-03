@@ -117,13 +117,10 @@ fn convert_metadata<'py>(py: Python<'py>, metadata: &HashMap<String, String>) ->
 /// Converts a Rust Arrow `Field` to a PyArrow field.
 fn rust_to_pyarrow_field(py: Python, field: &Field) -> PyResult<PyObject> {
     let pa = PyModule::import(py, "pyarrow")?;
-    // (Assume you have a function `rust_to_pyarrow_dtype` to convert the datatype.)
     let dtype = rust_to_pyarrow_dtype(py, field.data_type())?;
 
-    // Here, instead of matching on Option, we work with the HashMap directly.
     let py_metadata = convert_metadata(py, field.metadata());
 
-    // Create the field using pyarrow.field(name, type, nullable, metadata)
     let py_field = pa
         .getattr("field")?
         .call1((field.name(), dtype, field.is_nullable(), py_metadata))?;
