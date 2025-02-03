@@ -16,13 +16,14 @@
 Using [roxmltree](https://github.com/RazrFalcon/roxmltree) to parse XML files. 
 
 Converts xsd schema to:
-- [x] json
-- [ ] arrow
+- [x] arrow
 - [ ] avro
-- [ ] protobuf
-- [x] jsonschema
-- [x] json representation of spark schema
 - [x] duckdb (read_csv columns/types)
+- [x] json
+- [x] json representation of spark schema
+- [x] jsonschema
+- [ ] polars
+- [ ] protobuf
 
 ## User Guide
 ### Python
@@ -144,6 +145,187 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 >>> j
 {'Field1': 'VARCHAR(15)', 'Field2': 'VARCHAR(20)', 'Field3': 'VARCHAR(10)', 'Field4': 'VARCHAR(50)', 'Field5': 'TIMESTAMP', 'Field6': 'DATE', 'Field7': 'DATE', 'Field8': 'VARCHAR(10)', 'Field9': 'VARCHAR(3)', 'Field10': 'VARCHAR(30)', 'Field11': 'VARCHAR(10)', 'Field12': 'DECIMAL(25, 7)', 'Field13': 'VARCHAR(255)', 'Field14': 'VARCHAR(255)', 'Field15': 'VARCHAR(255)', 'Field16': 'VARCHAR(255)', 'Field17': 'DATE', 'Field18': 'VARCHAR(30)', 'Field19': 'VARCHAR(255)', 'Field20': 'DECIMAL(25, 7)', 'Field21': 'INTEGER'}
+>>>
+```
+
+
+### with pyarrow
+```python
+>>> import pyarrow as pa
+>>> from pyarrow import csv
+>>> from pyaxp import parse_xsd
+>>>
+>>> arrow_schema = parse_xsd("example.xsd", "arrow")
+>>> convert_options = csv.ConvertOptions(column_types=arrow_schema)
+>>> arrow_df = csv.read_csv("example-data.csv",
+                            ...                         parse_options=csv.ParseOptions(delimiter=";"),
+...                         convert_options=convert_options)
+>>>
+>>> print(arrow_df)
+pyarrow.Table
+Field1: string
+Field2: string
+Field3: string
+Field4: string
+Field5: timestamp[ns]
+Field6: date32[day]
+Field7: date32[day]
+Field8: string
+Field9: string
+Field10: string
+Field11: string
+Field12: decimal128(25, 7)
+Field13: string
+Field14: string
+Field15: string
+Field16: string
+Field17: date32[day]
+Field18: string
+Field19: string
+Field20: double
+Field21: int32
+----
+Field1: [["A1","A2","A3"]]
+Field2: [["B1","B2","B3"]]
+Field3: [["C1","C2","C3"]]
+Field4: [["D1","","D3"]]
+Field5: [[2024-02-01 10:30:00.000000000,2024-02-01 11:00:00.000000000,2024-02-01 12:15:00.000000000]]
+Field6: [[2024-02-01,null,2024-02-03]]
+Field7: [[2024-01-31,2024-01-30,null]]
+Field8: [["E1","E2","E3"]]
+Field9: [["F1","","F3"]]
+Field10: [["G1","G2",""]]
+...
+>>> print(arrow_df.to_struct_array())
+[
+  -- is_valid: all not null
+  -- child 0 type: string
+    [
+      "A1",
+      "A2",
+      "A3"
+    ]
+  -- child 1 type: string
+    [
+      "B1",
+      "B2",
+      "B3"
+    ]
+  -- child 2 type: string
+    [
+      "C1",
+      "C2",
+      "C3"
+    ]
+  -- child 3 type: string
+    [
+      "D1",
+      "",
+      "D3"
+    ]
+  -- child 4 type: timestamp[ns]
+    [
+      2024-02-01 10:30:00.000000000,
+      2024-02-01 11:00:00.000000000,
+      2024-02-01 12:15:00.000000000
+    ]
+  -- child 5 type: date32[day]
+    [
+      2024-02-01,
+      null,
+      2024-02-03
+    ]
+  -- child 6 type: date32[day]
+    [
+      2024-01-31,
+      2024-01-30,
+      null
+    ]
+  -- child 7 type: string
+    [
+      "E1",
+      "E2",
+      "E3"
+    ]
+  -- child 8 type: string
+    [
+      "F1",
+      "",
+      "F3"
+    ]
+  -- child 9 type: string
+    [
+      "G1",
+      "G2",
+      ""
+    ]
+  -- child 10 type: string
+    [
+      "H1",
+      "H2",
+      "H3"
+    ]
+  -- child 11 type: decimal128(25, 7)
+    [
+      123456789012345678.1234567,
+      null,
+      98765432109876543.7654321
+    ]
+  -- child 12 type: string
+    [
+      "I1",
+      "I2",
+      "I3"
+    ]
+  -- child 13 type: string
+    [
+      "J1",
+      "J2",
+      ""
+    ]
+  -- child 14 type: string
+    [
+      "K1",
+      "K2",
+      "K3"
+    ]
+  -- child 15 type: string
+    [
+      "L1",
+      "L2",
+      "L3"
+    ]
+  -- child 16 type: date32[day]
+    [
+      2024-02-01,
+      2024-02-02,
+      2024-02-03
+    ]
+  -- child 17 type: string
+    [
+      "M1",
+      "M2",
+      "M3"
+    ]
+  -- child 18 type: string
+    [
+      "N1",
+      "N2",
+      "N3"
+    ]
+  -- child 19 type: double
+    [
+      100,
+      200,
+      null
+    ]
+  -- child 20 type: int32
+    [
+      10,
+      20,
+      null
+    ]
+]
 >>>
 ```
 

@@ -49,7 +49,7 @@ fn main() {
             OutputFormat::Arrow => {
                 let arrow_schema = schema.to_arrow().unwrap();
                 // dbg!(arrow_schema);
-                println!("{}", arrow_schema.to_string());
+                println!("{:?}", arrow_schema);
             },
             OutputFormat::Spark => {
                 let spark_schema = schema.to_spark().unwrap().to_json().unwrap();

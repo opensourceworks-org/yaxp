@@ -16,13 +16,14 @@
 Using [roxmltree](https://github.com/RazrFalcon/roxmltree) to parse XML files. 
 
 Converts xsd schema to:
-- [x] json
-- [ ] arrow
+- [x] arrow
 - [ ] avro
-- [ ] protobuf
-- [x] jsonschema
-- [x] json representation of spark schema
 - [x] duckdb (read_csv columns/types)
+- [x] json
+- [x] json representation of spark schema
+- [x] jsonschema
+- [ ] polars
+- [ ] protobuf
 
 
 
