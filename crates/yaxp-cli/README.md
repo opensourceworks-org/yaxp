@@ -24,7 +24,7 @@ Converts xsd schema to:
 - [x] json
 - [x] json representation of spark schema
 - [x] jsonschema
-- [ ] polars
+- [x] polars
 - [ ] protobuf
 
 
