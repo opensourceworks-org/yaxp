@@ -1972,7 +1972,7 @@ dependencies = [
 
 [[package]]
 name = "pyaxp"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "arrow",
  "polars",
@@ -2850,7 +2850,7 @@ checksum = "fdd20c5420375476fbd4394763288da7eb0cc0b8c11deed431a91562af7335d3"
 
 [[package]]
 name = "yaxp-cli"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "clap",
  "serde",
@@ -2859,7 +2859,7 @@ dependencies = [
 
 [[package]]
 name = "yaxp-common"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "arrow",
  "indexmap",

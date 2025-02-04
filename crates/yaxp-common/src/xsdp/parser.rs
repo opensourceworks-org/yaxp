@@ -1,5 +1,5 @@
 use arrow::datatypes::{DataType, Field, Schema as ArrowSchema, TimeUnit};
-use pyo3::{FromPyObject, IntoPyObject, PyAny, PyObject, PyResult, Python};
+use pyo3::{FromPyObject, IntoPyObject, PyAny, PyResult, Python};
 use roxmltree::Document;
 use serde::{Deserialize, Serialize};
 use indexmap::IndexMap;
@@ -17,7 +17,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::{PyAnyMethods, PyDictMethods};
 use pyo3::types::{PyDict, PyString};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum TimestampUnit {
     Ms,
     Us,
@@ -31,14 +31,15 @@ impl FromStr for TimestampUnit {
             "ns" => Ok(TimestampUnit::Ns),
             "ms" => Ok(TimestampUnit::Ms),
             "us" => Ok(TimestampUnit::Us),
-            _ => Err(format!("Invalid precision: {}. Available: s, ms, us, ns", s)),
+            "μs" => Ok(TimestampUnit::Us),
+            _ => Err(format!("Invalid precision: {}. Available: ms, us, ns", s)),
         }
     }
 }
 
 impl<'py> IntoPyObject<'py> for TimestampUnit {
-    type Output = <&'py str as IntoPyObject<'py>>::Output;
     type Target = <&'py str as IntoPyObject<'py>>::Target;
+    type Output = <&'py str as IntoPyObject<'py>>::Output;
     type Error = Infallible;
 
     fn into_pyobject(self, py: Python<'py>) -> Result<pyo3::Bound<'py, PyString>, Infallible> {
@@ -59,7 +60,7 @@ impl fmt::Display for TimestampUnit {
 
 
 // Define the TimestampOptions struct.
-#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+#[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone)]
 pub struct TimestampOptions {
     pub time_unit: Option<TimestampUnit>,
     pub time_zone: Option<String>,
@@ -82,6 +83,7 @@ impl<'source> FromPyObject<'source> for TimestampOptions {
         // First, extract the result from get_item before pattern matching.
         let precision_item = dict.get_item("time_unit")?;
         let time_unit: Option<String> = if let Some(item) = precision_item {
+
             Some(item.extract()?)
         } else {
             None
@@ -94,7 +96,6 @@ impl<'source> FromPyObject<'source> for TimestampOptions {
             None
         };
 
-        // Convert the precision string (if any) into TimestampPrecision.
         let time_unit = match time_unit {
             Some(s) => Some(s.parse().map_err(|e: String| PyValueError::new_err(e))?),
             None => None,
@@ -183,8 +184,9 @@ impl Schema {
 
     pub fn to_polars(&self) -> PolarsSchema {
         let mut schema: PolarsSchema = Default::default();
-        let ts_options = match &self.timestamp_options {
-            Some(options) => Some(options.into()),
+        let to = self.timestamp_options.clone();
+        let ts_options = match to {
+            Some(options) => Some(options),
             None => None,
         };
         for element in &self.schema_element.elements {
@@ -505,8 +507,8 @@ impl SchemaElement {
                 let timezone = timestamp_options
                     .as_ref()
                     .and_then(|options| options.time_zone.as_ref())
-                    .map(|s| s.to_string());
-                PolarsDataType::Datetime(time_unit, timezone.into())
+                    .map(|s| s.into());
+                PolarsDataType::Datetime(time_unit, timezone)
             },
             Some("time") => PolarsDataType::Time,
             Some("decimal") => {
@@ -723,7 +725,6 @@ fn parse_element(
 }
 
 pub fn parse_file(xsd_file: &str, timestamp_options: Option<TimestampOptions>) -> Result<Schema, Box<dyn std::error::Error>> {
-    dbg!(&timestamp_options);
     let xml_content = fs::read_to_string(xsd_file).expect("Failed to read XSD file");
     let doc = Document::parse(&xml_content).expect("Failed to parse XML");
 
