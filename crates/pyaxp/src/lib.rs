@@ -84,9 +84,11 @@ fn convert_polars_dtype_to_pyobject(py: Python, dtype: &PolarsDataType) -> PyRes
             // dbg!(&time_unit.to_string());
             // BUG: time_unit.to_string() returns the wrong value for the TimeUnit enum on microseconds
             //      causing a ValueError in python
+            // bug code location: https://github.com/pola-rs/polars/blob/a578d51734657de85e2b5eb98b58065882f49d73/crates/polars-core/src/datatypes/time_unit.rs#L32
+            // Example:
             // time_unit == TimeUnit::Microseconds
             // time_unit.to_string() => "μs"
-            // =>
+            // => https://github.com/pola-rs/polars/blob/a578d51734657de85e2b5eb98b58065882f49d73/py-polars/polars/datatypes/classes.py#L531
             //   File ".venv/lib/python3.13/site-packages/polars/datatypes/classes.py", line 485, in __init__
             //     raise ValueError(msg)
             // ValueError: invalid `time_unit`
