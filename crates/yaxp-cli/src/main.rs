@@ -1,6 +1,7 @@
 use clap::Parser;
 use serde::Serialize;
 use yaxp_common::xsdp::parser::parse_file;
+use yaxp_common::xsdp::parser::{TimestampUnit, TimestampOptions};
 
 #[derive(clap::ValueEnum, Clone, Default, Debug, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -30,12 +31,25 @@ struct Args {
     /// optional output filename
     #[clap(short, long, default_value = None)]
     output: Option<String>,
+
+    /// optional timeunit
+    #[clap(short, long, default_value = "ns")]
+    timeunit: TimestampUnit,
+
+    /// optional timezone
+    #[clap(short = 'z', long, default_value = "UTC")]
+    timezone: String,
 }
 
 fn main() {
     let args = Args::parse();
 
-    let result = parse_file(&args.xsd);
+    let timestamp_options = TimestampOptions {
+        time_unit: Some(args.timeunit),
+        time_zone: Some(args.timezone),
+    };
+
+    let result = parse_file(&args.xsd, Some(timestamp_options));
 
     match result {
         Ok(schema) => match args.format {

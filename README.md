@@ -58,5 +58,5 @@ crates
 ## TODO
 
 - [x] Add pyo3/maturin support
-- [ ] add parameter for timezone precision/TZ
+- [ ] add parameter for timezone unit/TZ (testing with polars)
 - [ ] Add tests

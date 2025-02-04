@@ -1,6 +1,6 @@
 [package]
 name = "yaxp-cli"
-version = "0.1.9"
+version = "0.1.11"
 edition = "2021"
 authors = ["Jeroen <jeroen@flexworks.eu>"]
 description = "<yaxp-cli ⚡> Yet Another XML Parser CLI"
@@ -10,5 +10,5 @@ license = "MIT"
 
 [dependencies]
 clap = { version = "4.5.23", features = ["derive"] }
-yaxp-common = { path = "../yaxp-common", version = "0.1.9" }
+yaxp-common = { path = "../yaxp-common", version = "0.1.11" }
 serde = { version = "1.0.217", features = ["derive"] }

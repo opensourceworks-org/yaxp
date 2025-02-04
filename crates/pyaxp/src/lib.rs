@@ -1,17 +1,18 @@
-use std::collections::HashMap;
-use pyo3::prelude::*;
-use pyo3::types::PyDict;
-use yaxp_common::xsdp::parser::parse_file;
 use arrow::datatypes::DataType::*;
-use arrow::datatypes::{Field, IntervalUnit, TimeUnit, Schema};
-use pyo3::exceptions::{PyNotImplementedError, PyValueError};
-use pyo3::types::IntoPyDict;
-use polars::datatypes::DataType as PolarsDataType;
+use arrow::datatypes::{Field, IntervalUnit, Schema, TimeUnit};
 use polars;
-use std::str::FromStr;
+use polars::datatypes::DataType as PolarsDataType;
 use pyo3::conversion::FromPyObject;
+use pyo3::exceptions::{PyNotImplementedError, PyValueError};
+use pyo3::prelude::*;
+use pyo3::types::IntoPyDict;
 use pyo3::types::PyAny;
+use pyo3::types::PyDict;
+use std::collections::HashMap;
 use std::fmt;
+use std::str::FromStr;
+use yaxp_common::xsdp::parser::parse_file;
+use yaxp_common::xsdp::parser::TimestampOptions;
 
 #[derive(Debug, Clone)]
 enum SchemaFormat {
@@ -59,38 +60,57 @@ fn convert_polars_dtype_to_pyobject(py: Python, dtype: &PolarsDataType) -> PyRes
     let polars = PyModule::import(py, "polars")?;
     match dtype {
         PolarsDataType::Boolean => Ok(polars.getattr("Boolean")?.into_pyobject(py)?.into()),
-        PolarsDataType::Int8    => Ok(polars.getattr("Int8")?.into_pyobject(py)?.into()),
-        PolarsDataType::Int16   => Ok(polars.getattr("Int16")?.into_pyobject(py)?.into()),
-        PolarsDataType::Int32   => Ok(polars.getattr("Int32")?.into_pyobject(py)?.into()),
-        PolarsDataType::Int64   => Ok(polars.getattr("Int64")?.into_pyobject(py)?.into()),
-        PolarsDataType::UInt8   => Ok(polars.getattr("UInt8")?.into_pyobject(py)?.into()),
-        PolarsDataType::UInt16  => Ok(polars.getattr("UInt16")?.into_pyobject(py)?.into()),
-        PolarsDataType::UInt32  => Ok(polars.getattr("UInt32")?.into_pyobject(py)?.into()),
-        PolarsDataType::UInt64  => Ok(polars.getattr("UInt64")?.into_pyobject(py)?.into()),
+        PolarsDataType::Int8 => Ok(polars.getattr("Int8")?.into_pyobject(py)?.into()),
+        PolarsDataType::Int16 => Ok(polars.getattr("Int16")?.into_pyobject(py)?.into()),
+        PolarsDataType::Int32 => Ok(polars.getattr("Int32")?.into_pyobject(py)?.into()),
+        PolarsDataType::Int64 => Ok(polars.getattr("Int64")?.into_pyobject(py)?.into()),
+        PolarsDataType::UInt8 => Ok(polars.getattr("UInt8")?.into_pyobject(py)?.into()),
+        PolarsDataType::UInt16 => Ok(polars.getattr("UInt16")?.into_pyobject(py)?.into()),
+        PolarsDataType::UInt32 => Ok(polars.getattr("UInt32")?.into_pyobject(py)?.into()),
+        PolarsDataType::UInt64 => Ok(polars.getattr("UInt64")?.into_pyobject(py)?.into()),
         PolarsDataType::Float32 => Ok(polars.getattr("Float32")?.into_pyobject(py)?.into()),
         PolarsDataType::Float64 => Ok(polars.getattr("Float64")?.into_pyobject(py)?.into()),
-        PolarsDataType::String  => Ok(polars.getattr("Utf8")?.into_pyobject(py)?.into()),
+        PolarsDataType::String => Ok(polars.getattr("Utf8")?.into_pyobject(py)?.into()),
         PolarsDataType::Decimal(precision, scale) => {
             let decimal_cls = polars.getattr("Decimal")?;
             // calling the Decimal class with the provided precision and scale
-            Ok(decimal_cls.call1((precision, scale))?.into_pyobject(py)?.into())
-        },
+            Ok(decimal_cls
+                .call1((precision, scale))?
+                .into_pyobject(py)?
+                .into())
+        }
         PolarsDataType::Date => Ok(polars.getattr("Date")?.into_pyobject(py)?.into()),
         PolarsDataType::Datetime(time_unit, tz) => {
-            let datetime_cls = polars.getattr("Datetime")?;
-            let pytz = match tz {
-                Some(tz) => Some(tz.to_string()),
-                None => None,
+            // dbg!(&time_unit.to_string());
+            // BUG: time_unit.to_string() returns the wrong value for the TimeUnit enum on microseconds
+            //      causing a ValueError in python
+            // time_unit == TimeUnit::Microseconds
+            // time_unit.to_string() => "μs"
+            // =>
+            //   File ".venv/lib/python3.13/site-packages/polars/datatypes/classes.py", line 485, in __init__
+            //     raise ValueError(msg)
+            // ValueError: invalid `time_unit`
+            //
+            // Expected one of {'ns','us','ms'}, got 'μs'.
+            //
+            let tu = match time_unit {
+                polars::datatypes::TimeUnit::Milliseconds => "ms",
+                polars::datatypes::TimeUnit::Microseconds => "us",
+                polars::datatypes::TimeUnit::Nanoseconds => "ns",
             };
-            Ok(datetime_cls.call1((time_unit.to_string(), pytz))?.into_pyobject(py)?.into())
-        },
+            let datetime_cls = polars.getattr("Datetime")?;
+            let pytz = tz.as_ref().map(|t| t.to_string());
+
+
+            Ok(datetime_cls.call1((tu, pytz))?.into())
+            // Ok(datetime_cls.call1((time_unit.to_string(), pytz))?.into_pyobject(py)?.into())
+        }
         // add more data types here ...
         _ => Err(PyErr::new::<pyo3::exceptions::PyNotImplementedError, _>(
             format!("Conversion for DataType {:?} is not implemented", dtype),
         )),
     }
 }
-
 
 fn rust_to_pyarrow_dtype(py: Python, dt: &arrow::datatypes::DataType) -> PyResult<PyObject> {
     let pa = PyModule::import(py, "pyarrow")?;
@@ -140,7 +160,7 @@ fn rust_to_pyarrow_dtype(py: Python, dt: &arrow::datatypes::DataType) -> PyResul
         }
         Timestamp(unit, tz_opt) => {
             let unit_str = match unit {
-                TimeUnit::Second => "s",
+                TimeUnit::Second => "ms",
                 TimeUnit::Millisecond => "ms",
                 TimeUnit::Microsecond => "us",
                 TimeUnit::Nanosecond => "ns",
@@ -155,9 +175,7 @@ fn rust_to_pyarrow_dtype(py: Python, dt: &arrow::datatypes::DataType) -> PyResul
             IntervalUnit::DayTime => pa.getattr("day_time_interval")?.call0(),
             IntervalUnit::MonthDayNano => pa.getattr("month_day_nano_interval")?.call0(),
         },
-        Decimal128(precision, scale) => {
-            pa.getattr("decimal128")?.call1((precision, scale))
-        }
+        Decimal128(precision, scale) => pa.getattr("decimal128")?.call1((precision, scale)),
         List(field) => {
             // for list types, we have to convert the inner field first
             let field_obj = field.to_pyarrow_field(py)?;
@@ -205,9 +223,9 @@ fn rust_to_pyarrow_field(py: Python, field: &Field) -> PyResult<PyObject> {
 
     let py_metadata = convert_metadata(py, field.metadata());
 
-    let py_field = pa
-        .getattr("field")?
-        .call1((field.name(), dtype, field.is_nullable(), py_metadata))?;
+    let py_field =
+        pa.getattr("field")?
+            .call1((field.name(), dtype, field.is_nullable(), py_metadata))?;
     Ok(py_field.into())
 }
 
@@ -254,51 +272,55 @@ impl PyArrowSchemaConversion for Schema {
     }
 }
 
-
-#[pyfunction]
-fn parse_xsd(py: Python, xsd_file: &str, format: SchemaFormat) -> PyResult<PyObject> {
-    let result = parse_file(xsd_file);
+#[pyfunction(signature = (xsd_file, format, timestamp_options=None))]
+fn parse_xsd(
+    py: Python,
+    xsd_file: &str,
+    format: SchemaFormat,
+    timestamp_options: Option<TimestampOptions>,
+) -> PyResult<PyObject> {
+    let result = parse_file(xsd_file, timestamp_options);
 
     match result {
         Ok(schema) => {
-
             match format {
-                SchemaFormat::Json => {
-                    match schema.into_pyobject(py) {
-                        Ok(py_schema) => Ok(py_schema.into()),
-                        Err(e) => Err(e),
-                    }
-
-                }
-                SchemaFormat::Arrow => {
-                    match schema.to_arrow() {
-                        Ok(arrow_schema) => {
-                            match arrow_schema.to_pyarrow_schema(py)  {
-                                Ok(py_arrow) => Ok(py_arrow.into()),
-                                _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to arrow"))}
-                            }
-                        }
-                        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
-                    }
-                }
-                SchemaFormat::Spark => {
-                    match schema.to_spark() {
-                        Ok(spark) => {
-                            match spark.to_json().unwrap().into_pyobject(py) {
-                                Ok(py_spark) => Ok(py_spark.into()),
-                                _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to spark"))}
-                            }
-                        }
-                        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
-                    }
+                SchemaFormat::Json => match schema.into_pyobject(py) {
+                    Ok(py_schema) => Ok(py_schema.into()),
+                    Err(e) => Err(e),
+                },
+                SchemaFormat::Arrow => match schema.to_arrow() {
+                    Ok(arrow_schema) => match arrow_schema.to_pyarrow_schema(py) {
+                        Ok(py_arrow) => Ok(py_arrow.into()),
+                        _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                            "Error converting to arrow",
+                        )),
+                    },
+                    Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                        "{}",
+                        e
+                    ))),
+                },
+                SchemaFormat::Spark => match schema.to_spark() {
+                    Ok(spark) => match spark.to_json().unwrap().into_pyobject(py) {
+                        Ok(py_spark) => Ok(py_spark.into()),
+                        _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                            "Error converting to spark",
+                        )),
+                    },
+                    Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                        "{}",
+                        e
+                    ))),
                 },
                 SchemaFormat::JsonSchema => {
                     let json_schema = schema.to_json_schema();
-                        match json_schema.to_string().into_pyobject(py) {
-                            Ok(py_json_schema) => Ok(py_json_schema.into()),
-                            _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to json schema"))}
-                        }
-                },
+                    match json_schema.to_string().into_pyobject(py) {
+                        Ok(py_json_schema) => Ok(py_json_schema.into()),
+                        _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                            "Error converting to json schema",
+                        )),
+                    }
+                }
                 SchemaFormat::Duckdb => {
                     let duckdb_indexmap = schema.to_duckdb_schema();
                     let duckdb_schema = PyDict::new(py);
@@ -307,9 +329,11 @@ fn parse_xsd(py: Python, xsd_file: &str, format: SchemaFormat) -> PyResult<PyObj
                     }
                     match duckdb_schema.into_pyobject(py) {
                         Ok(py_duckdb_schema) => Ok(py_duckdb_schema.into()),
-                        _ => {Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Error converting to duckdb schema"))}
+                        _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                            "Error converting to duckdb schema",
+                        )),
                     }
-                },
+                }
                 SchemaFormat::Polars => {
                     let polars_schema = schema.to_polars();
                     let py_schema = PyDict::new(py);
@@ -319,13 +343,15 @@ fn parse_xsd(py: Python, xsd_file: &str, format: SchemaFormat) -> PyResult<PyObj
                         py_schema.set_item(name.to_string(), py_dtype)?;
                     }
                     Ok(py_schema.into_pyobject(py)?.into())
-                },
+                }
                 // _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
                 //     format!("Invalid format: {}. Supported formats: arrow, duckdb, json, json_schema, polars, spark.", format))),
             }
-
         }
-        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e))),
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+            "{}",
+            e
+        ))),
     }
 }
 
