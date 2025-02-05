@@ -11,6 +11,7 @@ use pyo3::types::PyDict;
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
+use encoding_rs::{Encoding, UTF_8};
 use yaxp_common::xsdp::parser::parse_file;
 use yaxp_common::xsdp::parser::TimestampOptions;
 
@@ -274,14 +275,16 @@ impl PyArrowSchemaConversion for Schema {
     }
 }
 
-#[pyfunction(signature = (xsd_file, format, timestamp_options=None))]
+#[pyfunction(signature = (xsd_file, format, timestamp_options=None, encoding="utf-8"))]
 fn parse_xsd(
     py: Python,
     xsd_file: &str,
     format: SchemaFormat,
     timestamp_options: Option<TimestampOptions>,
+    encoding: &str,
 ) -> PyResult<PyObject> {
-    let result = parse_file(xsd_file, timestamp_options);
+    let use_encoding = Encoding::for_label(encoding.as_bytes()).unwrap_or(UTF_8);
+    let result = parse_file(xsd_file, timestamp_options, Some(use_encoding));
 
     match result {
         Ok(schema) => {

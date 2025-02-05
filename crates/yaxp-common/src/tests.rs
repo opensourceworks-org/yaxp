@@ -73,7 +73,6 @@ mod tests {
             elements: vec![],
         };
 
-
         let schema = Schema::new(None, schema_element);
         schema.write_to_json_file("test-output.json").unwrap();
         let output = fs::read_to_string("test-output.json").unwrap();
@@ -127,7 +126,6 @@ mod tests {
                 nullable: None,
                 elements: vec![schema_element.clone()],
             },
-
         };
         let converted_spark_schema = schema.to_spark().unwrap();
         let spark_element = schema_element.to_spark().unwrap();

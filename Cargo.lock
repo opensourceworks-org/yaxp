@@ -729,6 +729,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
+name = "encoding_rs"
+version = "0.8.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75030f3c4f45dafd7586dd6780965a8c7e8e285a5ecb86713e63a79c5b2766f3"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
+name = "encoding_rs_io"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cc3c5651fb62ab8aa3103998dade57efdd028544bd300516baa31840c252a83"
+dependencies = [
+ "encoding_rs",
+]
+
+[[package]]
 name = "enum_dispatch"
 version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1972,9 +1990,10 @@ dependencies = [
 
 [[package]]
 name = "pyaxp"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "arrow",
+ "encoding_rs",
  "polars",
  "pyo3",
  "serde",
@@ -2850,18 +2869,21 @@ checksum = "fdd20c5420375476fbd4394763288da7eb0cc0b8c11deed431a91562af7335d3"
 
 [[package]]
 name = "yaxp-cli"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "clap",
+ "encoding_rs",
  "serde",
  "yaxp-common",
 ]
 
 [[package]]
 name = "yaxp-common"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "arrow",
+ "encoding_rs",
+ "encoding_rs_io",
  "indexmap",
  "polars",
  "pyo3",

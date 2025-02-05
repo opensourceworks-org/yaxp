@@ -22,9 +22,14 @@
 
 # **<yaxp ⚡> Yet Another XSD Parser**
 
+> 📌 **Note:** This project is still under heavy development, and its APIs are subject to change.
 
 ## Introduction
 Using [roxmltree](https://github.com/RazrFalcon/roxmltree) to parse XML files. 
+
+Couldn't find a good xsd parser that can convert xsd schema to popular data processing library formats.  
+This project will read custom SimpleType and ComplexType from xsd schema and convert them to other formats, trying to stay as close to the original schema as possible.
+Even though arrow might be common to most, each library has its own quirks and limitations.
 
 Converts xsd schema to:
 - [x] arrow
@@ -59,4 +64,5 @@ crates
 
 - [x] Add pyo3/maturin support
 - [ ] add parameter for timezone unit/TZ (testing with polars)
+- [x] Add support for different xsd file encoding: UTF-16, UTF16LE, ...
 - [ ] Add tests
