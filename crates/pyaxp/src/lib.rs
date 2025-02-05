@@ -1,6 +1,6 @@
 use arrow::datatypes::DataType::*;
 use arrow::datatypes::{Field, IntervalUnit, Schema, TimeUnit};
-use polars;
+use encoding_rs::{Encoding, UTF_8};
 use polars::datatypes::DataType as PolarsDataType;
 use pyo3::conversion::FromPyObject;
 use pyo3::exceptions::{PyNotImplementedError, PyValueError};
@@ -11,7 +11,6 @@ use pyo3::types::PyDict;
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
-use encoding_rs::{Encoding, UTF_8};
 use yaxp_common::xsdp::parser::parse_file;
 use yaxp_common::xsdp::parser::TimestampOptions;
 
@@ -42,17 +41,18 @@ impl FromStr for SchemaFormat {
 
 impl fmt::Display for SchemaFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // For simplicity, just delegate to Debug formatting.
         write!(f, "{:?}", self)
     }
 }
 
-// Implement FromPyObject for Format, including the new extract_bound method.
 impl<'source> FromPyObject<'source> for SchemaFormat {
     fn extract_bound(bound: &pyo3::Bound<'source, PyAny>) -> PyResult<Self> {
-        // Here we call the existing implementation for &str.
         let s: String = <String as FromPyObject>::extract_bound(bound)?;
-        SchemaFormat::from_str(&s).map_err(|e| PyValueError::new_err(e))
+
+        // clippy advised to replace the closure with the function itself: `PyValueError::new_err`
+        // less clutter, maybe, less readable for some
+        // SchemaFormat::from_str(&s).map_err(|e| PyValueError::new_err(e))
+        SchemaFormat::from_str(&s).map_err(PyValueError::new_err)
     }
 }
 
@@ -103,7 +103,6 @@ fn convert_polars_dtype_to_pyobject(py: Python, dtype: &PolarsDataType) -> PyRes
             };
             let datetime_cls = polars.getattr("Datetime")?;
             let pytz = tz.as_ref().map(|t| t.to_string());
-
 
             Ok(datetime_cls.call1((tu, pytz))?.into())
             // Ok(datetime_cls.call1((time_unit.to_string(), pytz))?.into_pyobject(py)?.into())
@@ -295,7 +294,7 @@ fn parse_xsd(
                 },
                 SchemaFormat::Arrow => match schema.to_arrow() {
                     Ok(arrow_schema) => match arrow_schema.to_pyarrow_schema(py) {
-                        Ok(py_arrow) => Ok(py_arrow.into()),
+                        Ok(py_arrow) => Ok(py_arrow),
                         _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
                             "Error converting to arrow",
                         )),
@@ -348,9 +347,8 @@ fn parse_xsd(
                         py_schema.set_item(name.to_string(), py_dtype)?;
                     }
                     Ok(py_schema.into_pyobject(py)?.into())
-                }
-                // _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                //     format!("Invalid format: {}. Supported formats: arrow, duckdb, json, json_schema, polars, spark.", format))),
+                } // _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                  //     format!("Invalid format: {}. Supported formats: arrow, duckdb, json, json_schema, polars, spark.", format))),
             }
         }
         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(

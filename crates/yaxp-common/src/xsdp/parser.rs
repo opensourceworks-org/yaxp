@@ -1,4 +1,6 @@
 use arrow::datatypes::{DataType, Field, Schema as ArrowSchema, TimeUnit};
+use encoding_rs::{Encoding, UTF_8};
+use encoding_rs_io::DecodeReaderBytesBuilder;
 use indexmap::IndexMap;
 use polars::datatypes::TimeUnit as PolarsTimeUnit;
 use polars::datatypes::{DataType as PolarsDataType, PlSmallStr};
@@ -6,20 +8,21 @@ use polars::prelude::Schema as PolarsSchema;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::{PyAnyMethods, PyDictMethods};
 use pyo3::types::{PyDict, PyString};
-use pyo3::{FromPyObject, IntoPyObject, PyAny, PyResult, Python};
+use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyResult, Python};
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use roxmltree::Document;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
 use std::convert::Infallible;
+use std::fs::File;
+use std::io::Read;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::{fmt, fs};
-use std::fs::File;
-use std::io::Read;
-use encoding_rs_io::{ DecodeReaderBytesBuilder};
-use encoding_rs::{Encoding, UTF_8};
+
+/// Converting the `TimestampUnit` enum to a string representation for Polars breaks
+/// on "μs" when passing from rust to python. We handle that here by converting it to "us".
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum TimestampUnit {
@@ -62,7 +65,6 @@ impl fmt::Display for TimestampUnit {
     }
 }
 
-// Define the TimestampOptions struct.
 #[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone)]
 pub struct TimestampOptions {
     pub time_unit: Option<TimestampUnit>,
@@ -72,30 +74,29 @@ pub struct TimestampOptions {
 impl<'source> FromPyObject<'source> for TimestampUnit {
     fn extract_bound(bound: &pyo3::Bound<'source, PyAny>) -> PyResult<Self> {
         let s: String = <String as FromPyObject>::extract_bound(bound)?;
-        TimestampUnit::from_str(&s).map_err(|e| PyValueError::new_err(e))
+
+        // clippy advises to replace the closure with the function itself: `PyValueError::new_err`
+        // I'm not sure ...
+        // TimestampUnit::from_str(&s).map_err(|e| PyValueError::new_err(e))
+        TimestampUnit::from_str(&s).map_err(PyValueError::new_err)
+    }
+}
+
+fn _get_extracted_string(dict: &Bound<PyDict>, key: &str) -> PyResult<Option<String>> {
+    if let Some(item) = dict.get_item(key)? {
+        Ok(Some(item.extract()?))
+    } else {
+        Ok(None)
     }
 }
 
 impl<'source> FromPyObject<'source> for TimestampOptions {
     fn extract_bound(bound: &pyo3::Bound<'source, PyAny>) -> PyResult<Self> {
-        // Get the underlying PyAny and downcast it to a PyDict.
-        let obj = bound.as_ref();
+        let obj = bound;
         let dict = obj.downcast::<PyDict>()?;
 
-        // First, extract the result from get_item before pattern matching.
-        let precision_item = dict.get_item("time_unit")?;
-        let time_unit: Option<String> = if let Some(item) = precision_item {
-            Some(item.extract()?)
-        } else {
-            None
-        };
-
-        let timezone_item = dict.get_item("time_zone")?;
-        let time_zone: Option<String> = if let Some(item) = timezone_item {
-            Some(item.extract()?)
-        } else {
-            None
-        };
+        let time_unit: Option<String> = _get_extracted_string(dict, "time_unit")?;
+        let time_zone: Option<String> = _get_extracted_string(dict, "time_zone")?;
 
         let time_unit = match time_unit {
             Some(s) => Some(s.parse().map_err(|e: String| PyValueError::new_err(e))?),
@@ -108,6 +109,11 @@ impl<'source> FromPyObject<'source> for TimestampOptions {
         })
     }
 }
+
+/// Parsing the XSD file and converting it to various formats begins with a Schema struct
+/// and a SchemaElement struct.  Currently supporting Arrow, Spark, JSON, JSON Schema,
+/// DuckDB, and Polars schemas.
+///
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct Schema {
@@ -193,44 +199,6 @@ impl Schema {
             schema.insert(PlSmallStr::from(&element.name), element.to_polars(&to));
         }
         schema
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
-pub struct SparkSchema {
-    #[serde(rename = "type")]
-    pub schema_type: String,
-    pub fields: Vec<SparkField>,
-}
-
-impl SparkSchema {
-    pub fn new(schema_type: String, fields: Vec<SparkField>) -> Self {
-        SparkSchema {
-            schema_type,
-            fields,
-        }
-    }
-
-    pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
-        let json_output = serde_json::to_string(&self).expect("Failed to serialize JSON");
-        Ok(json_output)
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone)]
-pub struct SparkField {
-    #[serde(rename = "name")]
-    pub field_name: String,
-    #[serde(rename = "type")]
-    pub field_type: String,
-    pub nullable: bool,
-    pub metadata: Option<HashMap<String, String>>,
-}
-
-impl SparkField {
-    pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
-        let json_output = serde_json::to_string(&self).expect("Failed to serialize JSON");
-        Ok(json_output)
     }
 }
 
@@ -335,7 +303,7 @@ impl SchemaElement {
     pub fn to_spark(&self) -> Result<SparkField, Box<dyn std::error::Error>> {
         let field_type = match &self.data_type.as_deref() {
             Some("decimal") => {
-                if let (Some(ref total_digits), Some(ref fraction_digits)) = (
+                if let (Some(total_digits), Some(fraction_digits)) = (
                     &self.total_digits.as_deref(),
                     &self.fraction_digits.as_deref(),
                 ) {
@@ -354,7 +322,7 @@ impl SchemaElement {
             Some("dateTime") => "timestamp".to_string(),
             Some("date") => "date".to_string(),
             Some("string") => "string".to_string(),
-            Some(other) => other.to_string(), // todo: pass through the provided type?
+            Some(other) => other.to_string(), // todo: should we really just pass through the provided type?
             None => "string".to_string(),
         };
 
@@ -512,6 +480,44 @@ impl SchemaElement {
                 PolarsDataType::String
             }
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+pub struct SparkSchema {
+    #[serde(rename = "type")]
+    pub schema_type: String,
+    pub fields: Vec<SparkField>,
+}
+
+impl SparkSchema {
+    pub fn new(schema_type: String, fields: Vec<SparkField>) -> Self {
+        SparkSchema {
+            schema_type,
+            fields,
+        }
+    }
+
+    pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let json_output = serde_json::to_string(&self).expect("Failed to serialize JSON");
+        Ok(json_output)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone)]
+pub struct SparkField {
+    #[serde(rename = "name")]
+    pub field_name: String,
+    #[serde(rename = "type")]
+    pub field_type: String,
+    pub nullable: bool,
+    pub metadata: Option<HashMap<String, String>>,
+}
+
+impl SparkField {
+    pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let json_output = serde_json::to_string(&self).expect("Failed to serialize JSON");
+        Ok(json_output)
     }
 }
 
@@ -707,7 +713,6 @@ pub fn parse_file(
     timestamp_options: Option<TimestampOptions>,
     encoding: Option<&'static Encoding>,
 ) -> Result<Schema, Box<dyn std::error::Error>> {
-
     let file = File::open(xsd_file).expect("Failed to read XSD file");
 
     let use_encoding = encoding.unwrap_or(UTF_8);

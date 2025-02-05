@@ -69,7 +69,6 @@ fn main() {
             }
             OutputFormat::Arrow => {
                 let arrow_schema = schema.to_arrow().unwrap();
-                // dbg!(arrow_schema);
                 println!("{:?}", arrow_schema);
             }
             OutputFormat::Spark => {
