@@ -1,21 +1,25 @@
 use arrow::datatypes::{DataType, Field, Schema as ArrowSchema, TimeUnit};
-use pyo3::{FromPyObject, IntoPyObject, PyAny, PyResult, Python};
-use roxmltree::Document;
-use serde::{Deserialize, Serialize};
 use indexmap::IndexMap;
-use std::collections::HashMap;
-use std::{fmt, fs};
-use std::convert::Infallible;
-use std::str::FromStr;
-use std::sync::{Arc, Mutex};
-use serde_json::json;
-use rayon::iter::{ParallelBridge, ParallelIterator};
-use polars::datatypes::{DataType as PolarsDataType, PlSmallStr};
 use polars::datatypes::TimeUnit as PolarsTimeUnit;
-use polars::prelude::{Schema as PolarsSchema};
+use polars::datatypes::{DataType as PolarsDataType, PlSmallStr};
+use polars::prelude::Schema as PolarsSchema;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::{PyAnyMethods, PyDictMethods};
 use pyo3::types::{PyDict, PyString};
+use pyo3::{FromPyObject, IntoPyObject, PyAny, PyResult, Python};
+use rayon::iter::{ParallelBridge, ParallelIterator};
+use roxmltree::Document;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::collections::HashMap;
+use std::convert::Infallible;
+use std::str::FromStr;
+use std::sync::{Arc, Mutex};
+use std::{fmt, fs};
+use std::fs::File;
+use std::io::Read;
+use encoding_rs_io::{ DecodeReaderBytesBuilder};
+use encoding_rs::{Encoding, UTF_8};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum TimestampUnit {
@@ -58,7 +62,6 @@ impl fmt::Display for TimestampUnit {
     }
 }
 
-
 // Define the TimestampOptions struct.
 #[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone)]
 pub struct TimestampOptions {
@@ -73,7 +76,6 @@ impl<'source> FromPyObject<'source> for TimestampUnit {
     }
 }
 
-
 impl<'source> FromPyObject<'source> for TimestampOptions {
     fn extract_bound(bound: &pyo3::Bound<'source, PyAny>) -> PyResult<Self> {
         // Get the underlying PyAny and downcast it to a PyDict.
@@ -83,7 +85,6 @@ impl<'source> FromPyObject<'source> for TimestampOptions {
         // First, extract the result from get_item before pattern matching.
         let precision_item = dict.get_item("time_unit")?;
         let time_unit: Option<String> = if let Some(item) = precision_item {
-
             Some(item.extract()?)
         } else {
             None
@@ -108,8 +109,6 @@ impl<'source> FromPyObject<'source> for TimestampOptions {
     }
 }
 
-
-
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct Schema {
     pub(crate) namespace: Option<String>,
@@ -119,8 +118,11 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub fn new(namespace: Option<String>, schema_element: SchemaElement,
-               timestamp_options: Option<TimestampOptions>) -> Self {
+    pub fn new(
+        namespace: Option<String>,
+        schema_element: SchemaElement,
+        timestamp_options: Option<TimestampOptions>,
+    ) -> Self {
         Schema {
             namespace,
             schema_element,
@@ -141,7 +143,7 @@ impl Schema {
             fields.push(field);
         }
 
-        Ok( ArrowSchema::new(fields))
+        Ok(ArrowSchema::new(fields))
     }
 
     pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
@@ -185,42 +187,13 @@ impl Schema {
     pub fn to_polars(&self) -> PolarsSchema {
         let mut schema: PolarsSchema = Default::default();
         let to = self.timestamp_options.clone();
-        let ts_options = match to {
-            Some(options) => Some(options),
-            None => None,
-        };
+
         for element in &self.schema_element.elements {
             //let field = polars::datatypes::Field::new(PlSmallStr::from(&element.name), element.to_polars());
-            schema.insert(PlSmallStr::from(&element.name), element.to_polars(&ts_options));
-        };
-
+            schema.insert(PlSmallStr::from(&element.name), element.to_polars(&to));
+        }
         schema
-
-
-        // let fields = self.schema_element.elements.iter().map(|element| {
-        //     polars::datatypes::Field::new(PlSmallStr::from(&element.name), element.to_polars())
-        // }).collect();
-        // polars::prelude::Schema::new(fields)
-        // let fields_vec = if !self.schema_element.elements.is_empty() {
-        //     self
-        //         .schema_element
-        //         .elements
-        //         .iter()
-        //         .map(|e| {polars::datatypes::Field::new(PlSmallStr::from(&e.name), e.to_polars())})
-        //         .collect()
-        // } else {
-        //     Vec::new()
-        // };
-        //
-        //
-        // // Construct the Polars schema using the IndexMap.
-        // let polars_schema: PolarsSchema = fields_vec.into();
-        // polars_schema
-
-
     }
-
-
 }
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
@@ -341,15 +314,13 @@ impl SchemaElement {
             match data_type.as_str() {
                 "string" => Ok(DataType::Utf8),
                 "integer" => Ok(DataType::Int32),
-                "decimal" => {
-                    match (&self.total_digits, &self.fraction_digits) {
-                        (Some(precision), Some(scale)) => Ok(DataType::Decimal128(
-                            precision.parse::<u8>().unwrap(),
-                            scale.parse::<i8>().unwrap(),
-                        )),
-                        _ => Ok(DataType::Float64),
-                    }
-                }
+                "decimal" => match (&self.total_digits, &self.fraction_digits) {
+                    (Some(precision), Some(scale)) => Ok(DataType::Decimal128(
+                        precision.parse::<u8>().unwrap(),
+                        scale.parse::<i8>().unwrap(),
+                    )),
+                    _ => Ok(DataType::Float64),
+                },
                 "boolean" => Ok(DataType::Boolean),
                 "date" => Ok(DataType::Date32),
                 "dateTime" => Ok(DataType::Timestamp(TimeUnit::Nanosecond, None)),
@@ -362,7 +333,6 @@ impl SchemaElement {
     }
 
     pub fn to_spark(&self) -> Result<SparkField, Box<dyn std::error::Error>> {
-
         let field_type = match &self.data_type.as_deref() {
             Some("decimal") => {
                 if let (Some(ref total_digits), Some(ref fraction_digits)) = (
@@ -422,10 +392,16 @@ impl SchemaElement {
             field_type.insert("type".to_string(), final_type);
 
             if let Some(max_length) = &element.max_length {
-                field_type.insert("maxLength".to_string(), json!(max_length.parse::<u64>().unwrap_or(255)));
+                field_type.insert(
+                    "maxLength".to_string(),
+                    json!(max_length.parse::<u64>().unwrap_or(255)),
+                );
             }
             if let Some(min_length) = &element.min_length {
-                field_type.insert("minLength".to_string(), json!(min_length.parse::<u64>().unwrap_or(0)));
+                field_type.insert(
+                    "minLength".to_string(),
+                    json!(min_length.parse::<u64>().unwrap_or(0)),
+                );
             }
             if let Some(pattern) = &element.pattern {
                 field_type.insert("pattern".to_string(), json!(pattern));
@@ -467,13 +443,16 @@ impl SchemaElement {
 
         for element in &self.elements {
             let column_type = match element.data_type.as_deref() {
-                Some("string") => format!("VARCHAR({})", element.max_length.as_deref().unwrap_or("255")),
+                Some("string") => format!(
+                    "VARCHAR({})",
+                    element.max_length.as_deref().unwrap_or("255")
+                ),
                 Some("integer") => "INTEGER".to_string(),
                 Some("decimal") => {
                     let precision = element.total_digits.as_deref().unwrap_or("25");
                     let scale = element.fraction_digits.as_deref().unwrap_or("7");
                     format!("DECIMAL({}, {})", precision, scale)
-                },
+                }
                 Some("date") => "DATE".to_string(),
                 Some("dateTime") => "TIMESTAMP".to_string(),
                 _ => "VARCHAR(255)".to_string(),
@@ -486,7 +465,6 @@ impl SchemaElement {
     }
 
     fn to_polars(&self, timestamp_options: &Option<TimestampOptions>) -> PolarsDataType {
-
         match self.data_type.as_deref() {
             None => PolarsDataType::String,
             Some("string") => PolarsDataType::String,
@@ -509,11 +487,11 @@ impl SchemaElement {
                     .and_then(|options| options.time_zone.as_ref())
                     .map(|s| s.into());
                 PolarsDataType::Datetime(time_unit, timezone)
-            },
+            }
             Some("time") => PolarsDataType::Time,
             Some("decimal") => {
-                // Parse the total_digits as precision and fraction_digits as scale.
-                // Fallback to defaults if parsing fails.
+                // parsing the total_digits as precision and fraction_digits as scale
+                // fallback to defaults if parsing fails: 38|10
                 let precision = self
                     .total_digits
                     .as_ref()
@@ -724,33 +702,51 @@ fn parse_element(
     })
 }
 
-pub fn parse_file(xsd_file: &str, timestamp_options: Option<TimestampOptions>) -> Result<Schema, Box<dyn std::error::Error>> {
-    let xml_content = fs::read_to_string(xsd_file).expect("Failed to read XSD file");
+pub fn parse_file(
+    xsd_file: &str,
+    timestamp_options: Option<TimestampOptions>,
+) -> Result<Schema, Box<dyn std::error::Error>> {
+    // TODO: implement UTF-16 support (LE/BE)
+
+    let file = File::open(xsd_file).expect("Failed to read XSD file");
+
+    // Build a transcoding reader that will:
+    // - Detect the encoding using a BOM if available.
+    // - Fall back to UTF-8 if no BOM is found.
+    let mut transcoded_reader = DecodeReaderBytesBuilder::new()
+        // Setting the fallback to UTF-8:
+        .encoding(Some(UTF_8))
+        .build(file);
+
+    // Read the decoded UTF-8 content into a String.
+    let mut xml_content = String::new();
+    transcoded_reader.read_to_string(&mut xml_content)?;
+
+    dbg!(&xml_content.to_string());
+
+    // let xml_content = fs::read_to_string(xsd_file).expect("Failed to read XSD file");
     let doc = Document::parse(&xml_content).expect("Failed to parse XML");
 
     let global_types = Arc::new(Mutex::new(HashMap::new()));
 
-    doc.root().descendants()
-        .par_bridge()
-        .for_each(|node| {
-            if node.tag_name().name() == "simpleType" {
-                if let Some(name) = node.attribute("name") {
-                    for child in node.children() {
-                        if child.tag_name().name() == "restriction" {
-                            let mut map = global_types.lock().unwrap();
-                            map.insert(name.to_string(), extract_constraints(child));
-                            // global_types.insert(name.clone().to_string(), extract_constraints(child));
-                        }
+    doc.root().descendants().par_bridge().for_each(|node| {
+        if node.tag_name().name() == "simpleType" {
+            if let Some(name) = node.attribute("name") {
+                for child in node.children() {
+                    if child.tag_name().name() == "restriction" {
+                        let mut map = global_types.lock().unwrap();
+                        map.insert(name.to_string(), extract_constraints(child));
+                        // global_types.insert(name.clone().to_string(), extract_constraints(child));
                     }
                 }
             }
-        });
+        }
+    });
 
     let final_map = Arc::try_unwrap(global_types)
         .expect("Arc should have no other refs")
         .into_inner()
         .expect("Mutex should be unlocked");
-
 
     // for node in doc.root().descendants() {
     //     if node.tag_name().name() == "simpleType" {

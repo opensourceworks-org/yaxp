@@ -1,7 +1,7 @@
 use clap::Parser;
 use serde::Serialize;
 use yaxp_common::xsdp::parser::parse_file;
-use yaxp_common::xsdp::parser::{TimestampUnit, TimestampOptions};
+use yaxp_common::xsdp::parser::{TimestampOptions, TimestampUnit};
 
 #[derive(clap::ValueEnum, Clone, Default, Debug, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -65,23 +65,23 @@ fn main() {
                 let arrow_schema = schema.to_arrow().unwrap();
                 // dbg!(arrow_schema);
                 println!("{:?}", arrow_schema);
-            },
+            }
             OutputFormat::Spark => {
                 let spark_schema = schema.to_spark().unwrap().to_json().unwrap();
                 println!("{}", spark_schema);
-            },
+            }
             OutputFormat::JsonSchema => {
                 let json_schema = schema.to_json_schema();
                 println!("{}", json_schema);
-            },
+            }
             OutputFormat::Duckdb => {
                 let duckdb_schema = schema.to_duckdb_schema();
                 println!("{:?}", duckdb_schema);
-            },
+            }
             OutputFormat::Polars => {
                 let polars_schema = schema.to_polars();
                 println!("{:?}", polars_schema);
-            },
+            }
         },
         Err(e) => eprintln!("❌ {}", e),
     }
