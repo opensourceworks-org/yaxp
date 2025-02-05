@@ -22,6 +22,7 @@
 
 # **<yaxp ⚡> Yet Another XSD Parser**
 
+> 📌 **Note:** This project is still under heavy development, and its APIs are subject to change.
 
 ## Introduction
 Using [roxmltree](https://github.com/RazrFalcon/roxmltree) to parse XML files. 
@@ -63,4 +64,5 @@ crates
 
 - [x] Add pyo3/maturin support
 - [ ] add parameter for timezone unit/TZ (testing with polars)
+- [x] Add support for different xsd file encoding: UTF-16, UTF16LE, ...
 - [ ] Add tests

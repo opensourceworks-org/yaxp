@@ -705,26 +705,21 @@ fn parse_element(
 pub fn parse_file(
     xsd_file: &str,
     timestamp_options: Option<TimestampOptions>,
+    encoding: Option<&'static Encoding>,
 ) -> Result<Schema, Box<dyn std::error::Error>> {
-    // TODO: implement UTF-16 support (LE/BE)
 
     let file = File::open(xsd_file).expect("Failed to read XSD file");
 
-    // Build a transcoding reader that will:
-    // - Detect the encoding using a BOM if available.
-    // - Fall back to UTF-8 if no BOM is found.
-    let mut transcoded_reader = DecodeReaderBytesBuilder::new()
-        // Setting the fallback to UTF-8:
-        .encoding(Some(UTF_8))
+    let use_encoding = encoding.unwrap_or(UTF_8);
+
+    let mut transcode_reader = DecodeReaderBytesBuilder::new()
+        // fallback to UTF-8
+        .encoding(Some(use_encoding))
         .build(file);
 
-    // Read the decoded UTF-8 content into a String.
     let mut xml_content = String::new();
-    transcoded_reader.read_to_string(&mut xml_content)?;
+    transcode_reader.read_to_string(&mut xml_content)?;
 
-    dbg!(&xml_content.to_string());
-
-    // let xml_content = fs::read_to_string(xsd_file).expect("Failed to read XSD file");
     let doc = Document::parse(&xml_content).expect("Failed to parse XML");
 
     let global_types = Arc::new(Mutex::new(HashMap::new()));

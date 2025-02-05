@@ -1,4 +1,5 @@
 use clap::Parser;
+use encoding_rs::{Encoding, UTF_8};
 use serde::Serialize;
 use yaxp_common::xsdp::parser::parse_file;
 use yaxp_common::xsdp::parser::{TimestampOptions, TimestampUnit};
@@ -39,6 +40,10 @@ struct Args {
     /// optional timezone
     #[clap(short = 'z', long, default_value = "UTC")]
     timezone: String,
+
+    /// optional encoding of the XSD file
+    #[clap(short, long, default_value = "utf-8")]
+    encoding: String,
 }
 
 fn main() {
@@ -49,7 +54,8 @@ fn main() {
         time_zone: Some(args.timezone),
     };
 
-    let result = parse_file(&args.xsd, Some(timestamp_options));
+    let use_encoding = Encoding::for_label(args.encoding.as_bytes()).unwrap_or(UTF_8);
+    let result = parse_file(&args.xsd, Some(timestamp_options), Some(use_encoding));
 
     match result {
         Ok(schema) => match args.format {
