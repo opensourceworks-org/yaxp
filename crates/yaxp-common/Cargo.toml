@@ -22,6 +22,6 @@ encoding_rs = "0.8.35"
 tempfile = "3.16.0"
 
 
+# [build]
+# profiler = true
 
-[build]
-profiler = true
