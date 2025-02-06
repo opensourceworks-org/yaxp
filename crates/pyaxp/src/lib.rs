@@ -318,12 +318,10 @@ fn parse_xsd(
                 },
                 SchemaFormat::JsonSchema => {
                     let json_schema = schema.to_json_schema();
-                    match json_schema.to_string().into_pyobject(py) {
-                        Ok(py_json_schema) => Ok(py_json_schema.into()),
-                        _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                            "Error converting to json schema",
-                        )),
-                    }
+                    let string_schema = json_schema.to_string();
+                    let json_module = PyModule::import(py, "json")?;
+                    let py_json_schema = json_module.getattr("loads")?.call1((string_schema,))?;
+                    Ok(py_json_schema.into())
                 }
                 SchemaFormat::Duckdb => {
                     let duckdb_indexmap = schema.to_duckdb_schema();
