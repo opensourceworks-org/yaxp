@@ -19,6 +19,9 @@ indexmap = "2.7.0"
 polars = { version = "0.46.0", features = ["dtype-decimal"] }
 encoding_rs_io = "0.1.7"
 encoding_rs = "0.8.35"
+tempfile = "3.16.0"
 
 
 
+[build]
+profiler = true

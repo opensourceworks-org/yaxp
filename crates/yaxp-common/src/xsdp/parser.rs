@@ -24,7 +24,7 @@ use std::{fmt, fs};
 /// Converting the `TimestampUnit` enum to a string representation for Polars breaks
 /// on "μs" when passing from rust to python. We handle that here by converting it to "us".
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum TimestampUnit {
     Ms,
     Us,
@@ -176,18 +176,38 @@ impl Schema {
     }
 
     pub fn to_json_schema(&self) -> serde_json::Value {
+        let mut fields = vec![];
+        let mut required = vec![];
+
+        for element in &self.schema_element.elements {
+            let (field, nullable) = element.to_json_schema();
+            fields.push(field);
+            if !nullable {
+                required.push(element.name.clone());
+            }
+        }
+
         json!({
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
-                "Main_Element": self.schema_element.to_json_schema()
+                "Main_Element": {
+                    "type": "object",
+                    "properties": fields,
+                }
             },
-            "required": ["Main_Element"]
+            "required": required
         })
     }
 
     pub fn to_duckdb_schema(&self) -> IndexMap<String, String> {
-        self.schema_element.to_duckdb_schema()
+        // self.schema_element.to_duckdb_schema()
+        let mut columns = IndexMap::new();
+        for element in &self.schema_element.elements {
+            let mut element_columns = element.to_duckdb_schema();
+            columns.append(&mut element_columns);
+        }
+        columns
     }
 
     pub fn to_polars(&self) -> PolarsSchema {
@@ -336,98 +356,103 @@ impl SchemaElement {
         Ok(field)
     }
 
-    fn to_json_schema(&self) -> serde_json::Value {
-        let mut properties = serde_json::Map::new();
-        let mut required = vec![];
+    fn to_json_schema(&self) -> (serde_json::Value, bool) {
+        // let mut properties = serde_json::Map::new();
+        // let mut required = vec![];
 
-        for element in &self.elements {
-            let mut field_type = serde_json::Map::new();
-            let base_type = match element.data_type.as_deref() {
-                Some("string") => json!("string"),
-                Some("integer") => json!("integer"),
-                Some("decimal") => json!("number"),
-                Some("date") => json!("string"),
-                Some("dateTime") => json!("string"),
-                _ => json!("string"),
-            };
+        // for element in &self.elements {
+        let mut field_type = serde_json::Map::new();
+        let base_type = match self.data_type.as_deref() {
+            Some("string") => json!("string"),
+            Some("integer") => json!("integer"),
+            Some("decimal") => json!("number"),
+            Some("date") => json!("string"),
+            Some("dateTime") => json!("string"),
+            _ => json!("string"),
+        };
 
-            let final_type = if element.nullable == Some(true) {
-                json!([base_type, "null"])
-            } else {
-                base_type
-            };
+        let final_type = if self.nullable == Some(true) {
+            json!([base_type, "null"])
+        } else {
+            base_type
+        };
 
-            field_type.insert("type".to_string(), final_type);
+        field_type.insert("type".to_string(), final_type);
 
-            if let Some(max_length) = &element.max_length {
-                field_type.insert(
-                    "maxLength".to_string(),
-                    json!(max_length.parse::<u64>().unwrap_or(255)),
-                );
-            }
-            if let Some(min_length) = &element.min_length {
-                field_type.insert(
-                    "minLength".to_string(),
-                    json!(min_length.parse::<u64>().unwrap_or(0)),
-                );
-            }
-            if let Some(pattern) = &element.pattern {
-                field_type.insert("pattern".to_string(), json!(pattern));
-            }
-            if let Some(values) = &element.values {
-                field_type.insert("enum".to_string(), json!(values));
-            }
-            if element.data_type.as_deref() == Some("decimal") {
-                if let (Some(fraction_digits), Some(total_digits)) = (
-                    element.fraction_digits.as_deref(),
-                    element.total_digits.as_deref(),
-                ) {
-                    let fraction = fraction_digits.parse::<u64>().unwrap_or(0);
-                    let total = total_digits.parse::<u64>().unwrap_or(0);
-                    let multiple_of = 10f64.powi(-(fraction as i32));
-                    let max_value = 10f64.powi(total as i32) - multiple_of;
+        if let Some(max_length) = &self.max_length {
+            field_type.insert(
+                "maxLength".to_string(),
+                json!(max_length.parse::<u64>().unwrap_or(255)),
+            );
+        }
+        if let Some(min_length) = &self.min_length {
+            field_type.insert(
+                "minLength".to_string(),
+                json!(min_length.parse::<u64>().unwrap_or(0)),
+            );
+        }
+        if let Some(pattern) = &self.pattern {
+            field_type.insert("pattern".to_string(), json!(pattern));
+        }
+        if let Some(values) = &self.values {
+            field_type.insert("enum".to_string(), json!(values));
+        }
+        if self.data_type.as_deref() == Some("decimal") {
+            if let (Some(fraction_digits), Some(total_digits)) = (
+                self.fraction_digits.as_deref(),
+                self.total_digits.as_deref(),
+            ) {
+                let fraction = fraction_digits.parse::<u64>().unwrap_or(0);
+                let total = total_digits.parse::<u64>().unwrap_or(0);
+                let multiple_of = 10f64.powi(-(fraction as i32));
+                let max_value = 10f64.powi(total as i32) - multiple_of;
 
-                    field_type.insert("multipleOf".to_string(), json!(multiple_of));
-                    field_type.insert("minimum".to_string(), json!(0));
-                    field_type.insert("maximum".to_string(), json!(max_value));
-                }
-            }
-
-            properties.insert(element.name.clone(), serde_json::Value::Object(field_type));
-            if element.nullable == Some(false) {
-                required.push(element.name.clone());
+                field_type.insert("multipleOf".to_string(), json!(multiple_of));
+                field_type.insert("minimum".to_string(), json!(0));
+                field_type.insert("maximum".to_string(), json!(max_value));
             }
         }
 
-        json!({
-            "type": "object",
-            "properties": properties,
-            "required": required,
-        })
+        // properties.insert(element.name.clone(), serde_json::Value::Object(field_type));
+        // if element.nullable == Some(false) {
+        //     required.push(element.name.clone());
+        // }
+        // }
+
+        // json!({
+        //     "type": "object",
+        //     "properties": properties,
+        //     "required": required,
+        // })
+
+        (
+            json!({
+                &self.name: field_type
+
+            }),
+            self.nullable.unwrap_or(true),
+        )
     }
 
     fn to_duckdb_schema(&self) -> IndexMap<String, String> {
         let mut columns = IndexMap::new();
 
-        for element in &self.elements {
-            let column_type = match element.data_type.as_deref() {
-                Some("string") => format!(
-                    "VARCHAR({})",
-                    element.max_length.as_deref().unwrap_or("255")
-                ),
-                Some("integer") => "INTEGER".to_string(),
-                Some("decimal") => {
-                    let precision = element.total_digits.as_deref().unwrap_or("25");
-                    let scale = element.fraction_digits.as_deref().unwrap_or("7");
-                    format!("DECIMAL({}, {})", precision, scale)
-                }
-                Some("date") => "DATE".to_string(),
-                Some("dateTime") => "TIMESTAMP".to_string(),
-                _ => "VARCHAR(255)".to_string(),
-            };
+        // for element in &self.elements {
+        let column_type = match self.data_type.as_deref() {
+            Some("string") => format!("VARCHAR({})", self.max_length.as_deref().unwrap_or("255")),
+            Some("integer") => "INTEGER".to_string(),
+            Some("decimal") => {
+                let precision = self.total_digits.as_deref().unwrap_or("25");
+                let scale = self.fraction_digits.as_deref().unwrap_or("7");
+                format!("DECIMAL({}, {})", precision, scale)
+            }
+            Some("date") => "DATE".to_string(),
+            Some("dateTime") => "TIMESTAMP".to_string(),
+            _ => "VARCHAR(255)".to_string(),
+        };
 
-            columns.insert(element.name.clone(), column_type);
-        }
+        columns.insert(self.name.clone(), column_type);
+        //}
 
         columns
     }
@@ -504,7 +529,7 @@ impl SparkSchema {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone)]
+#[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone, PartialEq, Eq)]
 pub struct SparkField {
     #[serde(rename = "name")]
     pub field_name: String,
@@ -718,7 +743,6 @@ pub fn parse_file(
     let use_encoding = encoding.unwrap_or(UTF_8);
 
     let mut transcode_reader = DecodeReaderBytesBuilder::new()
-        // fallback to UTF-8
         .encoding(Some(use_encoding))
         .build(file);
 
@@ -780,4 +804,366 @@ pub fn parse_file(
     } else {
         Err("Failed to find the main schema element in the XSD.".into())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_timestamp_unit_from_str() {
+        assert_eq!(TimestampUnit::from_str("ns").unwrap(), TimestampUnit::Ns);
+        assert_eq!(TimestampUnit::from_str("ms").unwrap(), TimestampUnit::Ms);
+        assert_eq!(TimestampUnit::from_str("us").unwrap(), TimestampUnit::Us);
+        assert!(TimestampUnit::from_str("invalid").is_err());
+    }
+
+    // #[test]
+    // fn test_timestamp_unit_into_pyobject() {
+    //     Python::with_gil(|py| {
+    //         let unit = TimestampUnit::Ms;
+    //         let py_obj = unit.into_pyobject(py).unwrap();
+    //         assert_eq!(py_obj.extract::<String>().unwrap(), "ms");
+    //     });
+    // }
+
+    #[test]
+    fn test_schema_to_arrow() {
+        let element = SchemaElement {
+            id: "id".to_string(),
+            name: "name".to_string(),
+            data_type: Some("string".to_string()),
+            min_occurs: Some("1".to_string()),
+            max_occurs: Some("1".to_string()),
+            min_length: None,
+            max_length: None,
+            min_inclusive: None,
+            max_inclusive: None,
+            min_exclusive: None,
+            max_exclusive: None,
+            pattern: None,
+            fraction_digits: None,
+            total_digits: None,
+            values: None,
+            is_currency: false,
+            xpath: "/name".to_string(),
+            nullable: Some(true),
+            elements: vec![],
+        };
+
+        let schema_element = SchemaElement {
+            id: "id".to_string(),
+            name: "name".to_string(),
+            data_type: Some("string".to_string()),
+            min_occurs: Some("1".to_string()),
+            max_occurs: Some("1".to_string()),
+            min_length: None,
+            max_length: None,
+            min_inclusive: None,
+            max_inclusive: None,
+            min_exclusive: None,
+            max_exclusive: None,
+            pattern: None,
+            fraction_digits: None,
+            total_digits: None,
+            values: None,
+            is_currency: false,
+            xpath: "/name".to_string(),
+            nullable: Some(true),
+            elements: vec![element],
+        };
+
+        let schema = Schema::new(None, schema_element, None);
+        let arrow_schema = schema.to_arrow().unwrap();
+        assert_eq!(arrow_schema.fields().len(), 1);
+        assert_eq!(arrow_schema.field(0).name(), "name");
+    }
+
+    #[test]
+    fn test_parse_file() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("test.xsd");
+        let mut file = File::create(&file_path).unwrap();
+        writeln!(
+            file,
+            r#"
+            <schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+                <xs:element name="testElement" type="xs:string"/>
+            </schema>
+            "#
+        )
+        .unwrap();
+
+        let schema = parse_file(file_path.to_str().unwrap(), None, None).unwrap();
+        assert_eq!(schema.schema_element.name, "testElement");
+    }
+
+    #[test]
+    fn test_schema_element_to_arrow() {
+        let element = SchemaElement {
+            id: "id".to_string(),
+            name: "name".to_string(),
+            data_type: Some("string".to_string()),
+            min_occurs: Some("1".to_string()),
+            max_occurs: Some("1".to_string()),
+            min_length: None,
+            max_length: None,
+            min_inclusive: None,
+            max_inclusive: None,
+            min_exclusive: None,
+            max_exclusive: None,
+            pattern: None,
+            fraction_digits: None,
+            total_digits: None,
+            values: None,
+            is_currency: false,
+            xpath: "/name".to_string(),
+            nullable: Some(true),
+            elements: vec![],
+        };
+
+        let data_type = element.to_arrow().unwrap();
+        assert_eq!(data_type, DataType::Utf8);
+    }
+
+    #[test]
+    fn test_schema_element_to_spark() {
+        let element = SchemaElement {
+            id: "id".to_string(),
+            name: "name".to_string(),
+            data_type: Some("string".to_string()),
+            min_occurs: Some("1".to_string()),
+            max_occurs: Some("1".to_string()),
+            min_length: None,
+            max_length: None,
+            min_inclusive: None,
+            max_inclusive: None,
+            min_exclusive: None,
+            max_exclusive: None,
+            pattern: None,
+            fraction_digits: None,
+            total_digits: None,
+            values: None,
+            is_currency: false,
+            xpath: "/name".to_string(),
+            nullable: Some(true),
+            elements: vec![],
+        };
+
+        let spark_field = element.to_spark().unwrap();
+        assert_eq!(spark_field.field_name, "name");
+        assert_eq!(spark_field.field_type, "string");
+    }
+
+    #[test]
+    fn test_schema_element_to_json_schema() {
+        let element = SchemaElement {
+            id: "id".to_string(),
+            name: "name".to_string(),
+            data_type: Some("string".to_string()),
+            min_occurs: Some("1".to_string()),
+            max_occurs: Some("1".to_string()),
+            min_length: None,
+            max_length: None,
+            min_inclusive: None,
+            max_inclusive: None,
+            min_exclusive: None,
+            max_exclusive: None,
+            pattern: None,
+            fraction_digits: None,
+            total_digits: None,
+            values: None,
+            is_currency: false,
+            xpath: "/name".to_string(),
+            nullable: Some(false),
+            elements: vec![],
+        };
+
+        let (json_element, nullable) = element.to_json_schema();
+        assert_eq!(
+            json_element
+                .get("name")
+                .and_then(|v| v.get("type"))
+                .and_then(|v| v.as_str()),
+            Some("string")
+        );
+        assert!(!nullable);
+    }
+
+    #[test]
+    fn test_schema_element_to_duckdb_schema() {
+        let element = SchemaElement {
+            id: "id".to_string(),
+            name: "name".to_string(),
+            data_type: Some("string".to_string()),
+            min_occurs: Some("1".to_string()),
+            max_occurs: Some("1".to_string()),
+            min_length: None,
+            max_length: None,
+            min_inclusive: None,
+            max_inclusive: None,
+            min_exclusive: None,
+            max_exclusive: None,
+            pattern: None,
+            fraction_digits: None,
+            total_digits: None,
+            values: None,
+            is_currency: false,
+            xpath: "/name".to_string(),
+            nullable: Some(true),
+            elements: vec![],
+        };
+
+        let duckdb_schema = element.to_duckdb_schema();
+        dbg!(&duckdb_schema);
+        assert_eq!(
+            duckdb_schema.get("name").unwrap().to_string(),
+            "VARCHAR(255)"
+        );
+    }
+
+    #[test]
+    fn test_duckdb_schema_ordered() {
+        let element1 = SchemaElement {
+            id: "id".to_string(),
+            name: "field1".to_string(),
+            data_type: Some("string".to_string()),
+            min_occurs: Some("1".to_string()),
+            max_occurs: Some("1".to_string()),
+            min_length: None,
+            max_length: None,
+            min_inclusive: None,
+            max_inclusive: None,
+            min_exclusive: None,
+            max_exclusive: None,
+            pattern: None,
+            fraction_digits: None,
+            total_digits: None,
+            values: None,
+            is_currency: false,
+            xpath: "/name".to_string(),
+            nullable: Some(true),
+            elements: vec![],
+        };
+
+        let element2 = SchemaElement {
+            id: "id".to_string(),
+            name: "field2".to_string(),
+            data_type: Some("string".to_string()),
+            min_occurs: Some("1".to_string()),
+            max_occurs: Some("1".to_string()),
+            min_length: None,
+            max_length: None,
+            min_inclusive: None,
+            max_inclusive: None,
+            min_exclusive: None,
+            max_exclusive: None,
+            pattern: None,
+            fraction_digits: None,
+            total_digits: None,
+            values: None,
+            is_currency: false,
+            xpath: "/name".to_string(),
+            nullable: Some(true),
+            elements: vec![],
+        };
+        let element3 = SchemaElement {
+            id: "id".to_string(),
+            name: "field3".to_string(),
+            data_type: Some("string".to_string()),
+            min_occurs: Some("1".to_string()),
+            max_occurs: Some("1".to_string()),
+            min_length: None,
+            max_length: None,
+            min_inclusive: None,
+            max_inclusive: None,
+            min_exclusive: None,
+            max_exclusive: None,
+            pattern: None,
+            fraction_digits: None,
+            total_digits: None,
+            values: None,
+            is_currency: false,
+            xpath: "/name".to_string(),
+            nullable: Some(true),
+            elements: vec![],
+        };
+
+        let schema = Schema {
+            namespace: None,
+            schema_element: SchemaElement {
+                id: "id".to_string(),
+                name: "main_schema".to_string(),
+                data_type: Some("string".to_string()),
+                min_occurs: Some("1".to_string()),
+                max_occurs: Some("1".to_string()),
+                min_length: None,
+                max_length: None,
+                min_inclusive: None,
+                max_inclusive: None,
+                min_exclusive: None,
+                max_exclusive: None,
+                pattern: None,
+                fraction_digits: None,
+                total_digits: None,
+                values: None,
+                is_currency: false,
+                xpath: "/name".to_string(),
+                nullable: Some(true),
+                elements: vec![element1, element2, element3],
+            },
+            timestamp_options: None,
+        };
+
+        let duckdb_schema = schema.to_duckdb_schema();
+        dbg!(&duckdb_schema);
+        let names = duckdb_schema.iter().map(|x| x.0.clone()).collect::<Vec<_>>();
+        assert_eq!(names, &["field1".to_string(), "field2".to_string(), "field3".to_string()]);
+    }
+
+    #[test]
+    fn test_extract_enum_values() {
+        let xml = r#"
+            <restriction base="xs:string">
+                <enumeration value="A"/>
+                <enumeration value="B"/>
+            </restriction>
+        "#;
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root().first_child().unwrap();
+        let values = extract_enum_values(node).unwrap();
+        assert_eq!(values, vec!["A", "B"]);
+    }
+
+    #[test]
+    fn test_extract_constraints() {
+        let xml = r#"
+            <restriction base="xs:string">
+                <minLength value="1"/>
+                <maxLength value="255"/>
+            </restriction>
+        "#;
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root().first_child().unwrap();
+        let constraints = extract_constraints(node);
+        assert_eq!(constraints.min_length, Some("1".to_string()));
+        assert_eq!(constraints.max_length, Some("255".to_string()));
+    }
+
+    #[test]
+    fn test_parse_element() {
+        let xml = r#"
+            <element name="testElement" type="xs:string"/>
+        "#;
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root().first_child().unwrap();
+        let element = parse_element(node, "", &HashMap::new()).unwrap();
+        assert_eq!(element.name, "testElement");
+        assert_eq!(element.data_type, Some("string".to_string()));
+    }
+
+
 }
