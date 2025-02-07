@@ -9,7 +9,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::{PyAnyMethods, PyDictMethods};
 use pyo3::types::{PyDict, PyString};
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyResult, Python};
-use rayon::iter::{ParallelBridge, ParallelIterator};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use roxmltree::Document;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -117,7 +117,7 @@ impl<'source> FromPyObject<'source> for TimestampOptions {
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct Schema {
-    pub(crate) namespace: Option<String>,
+    pub namespace: Option<String>,
     #[serde(rename = "schemaElement")]
     pub schema_element: SchemaElement,
     pub timestamp_options: Option<TimestampOptions>,
@@ -137,17 +137,19 @@ impl Schema {
     }
 
     pub fn to_arrow(&self) -> Result<ArrowSchema, Box<dyn std::error::Error>> {
-        let mut fields = vec![];
-
-        for element in &self.schema_element.elements {
-            let field = Field::new(
-                &element.name,
-                element.to_arrow()?,
-                element.nullable.unwrap_or(true),
-            )
-            .with_metadata(element.to_metadata());
-            fields.push(field);
-        }
+        let fields = self
+            .schema_element
+            .elements
+            .par_iter()
+            .map(|element| {
+                Field::new(
+                    &element.name,
+                    element.to_arrow().unwrap(),
+                    element.nullable.unwrap_or(true),
+                )
+                .with_metadata(element.to_metadata())
+            })
+            .collect::<Vec<Field>>();
 
         Ok(ArrowSchema::new(fields))
     }
@@ -753,7 +755,7 @@ pub fn parse_file(
 
     let global_types = Arc::new(Mutex::new(HashMap::new()));
 
-    doc.root().descendants().par_bridge().for_each(|node| {
+    doc.root().descendants().for_each(|node| {
         if node.tag_name().name() == "simpleType" {
             if let Some(name) = node.attribute("name") {
                 for child in node.children() {
@@ -1120,8 +1122,18 @@ mod tests {
 
         let duckdb_schema = schema.to_duckdb_schema();
         dbg!(&duckdb_schema);
-        let names = duckdb_schema.iter().map(|x| x.0.clone()).collect::<Vec<_>>();
-        assert_eq!(names, &["field1".to_string(), "field2".to_string(), "field3".to_string()]);
+        let names = duckdb_schema
+            .iter()
+            .map(|x| x.0.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            names,
+            &[
+                "field1".to_string(),
+                "field2".to_string(),
+                "field3".to_string()
+            ]
+        );
     }
 
     #[test]
@@ -1164,6 +1176,4 @@ mod tests {
         assert_eq!(element.name, "testElement");
         assert_eq!(element.data_type, Some("string".to_string()));
     }
-
-
 }
