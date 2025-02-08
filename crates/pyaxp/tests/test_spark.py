@@ -1,5 +1,3 @@
-import json
-
 from pyspark.sql import SparkSession
 from pyspark.sql.types import (
     StructType, StructField, StringType, TimestampType, DateType, DecimalType, IntegerType
@@ -26,8 +24,7 @@ data = [
 
 spark = SparkSession.builder.master("local").appName("Test Data").getOrCreate()
 schema = parse_xsd("example.xsd", "spark")
-spark_schema = StructType.fromJson(schema)
-df = spark.createDataFrame(data, schema=spark_schema)
+df = spark.createDataFrame(data, schema=schema)
 
 
 def test_parse_schema():

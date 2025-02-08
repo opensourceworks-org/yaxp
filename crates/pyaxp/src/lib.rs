@@ -306,8 +306,11 @@ fn parse_xsd(
                 },
                 SchemaFormat::Spark => match schema.to_spark() {
                     Ok(spark) => {
-                        println!("yes, SPARK!");
-                        Ok(spark.into_pyobject(py)?.into())
+                        let pyspark_module = PyModule::import(py, "pyspark.sql.types")?;
+                        let pyspark_struct_type = pyspark_module.getattr("StructType")?;
+                        let dict_schema = spark.into_pyobject(py)?;
+                        let py_struct_type = pyspark_struct_type.getattr("fromJson")?.call1((dict_schema,))?;
+                        Ok(py_struct_type.into())
                     }
                     Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
                         "{}",
