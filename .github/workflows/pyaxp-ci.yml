@@ -22,7 +22,31 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/pyaxp
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install venv
+        run: uv sync && cargo install maturin
+
+      - name: Run unit tests
+        run: uv run pytest --cov
+
   linux:
+    needs: test
     runs-on: ${{ matrix.platform.runner }}
     # Defaults apply only to run: steps (not to actions that use "uses:")
     defaults:
@@ -59,6 +83,7 @@ jobs:
           path: crates/pyaxp/dist
 
   musllinux:
+    needs: test
     runs-on: ${{ matrix.platform.runner }}
     defaults:
       run:
@@ -92,6 +117,7 @@ jobs:
           path: crates/pyaxp/dist
 
   windows:
+    needs: test
     runs-on: ${{ matrix.platform.runner }}
     defaults:
       run:
@@ -121,6 +147,7 @@ jobs:
           path: crates/pyaxp/dist
 
   macos:
+    needs: test
     runs-on: ${{ matrix.platform.runner }}
     defaults:
       run:
@@ -151,6 +178,7 @@ jobs:
           path: crates/pyaxp/dist
 
   sdist:
+    needs: test
     runs-on: ubuntu-latest
 #    defaults:
 #      run:
