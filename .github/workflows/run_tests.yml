@@ -8,6 +8,9 @@ on:
 jobs:
   test-yaxp-common:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/yaxp-common
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -19,8 +22,7 @@ jobs:
 
       - name: Run unit tests
         run: cargo test
-        with:
-          working-directory: crates/yaxp-common
+d
 
   test-pyaxp:
     runs-on: ubuntu-latest
