@@ -31,16 +31,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Rust
-        uses: actions/setup-rust@v1
-        with:
-          rust-version: stable
-
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v5
 
       - name: Install venv
-        run: uv sync && cargo install maturin
+        run: uv sync
 
       - name: Run unit tests
         run: uv run pytest --cov
