@@ -91,6 +91,7 @@ DataFrame[Field1: string, Field2: string, Field3: string, Field4: string, Field5
 |    A3|    B3|    C3|    D3|2024-02-01 12:15:00|2024-02-03|      NULL|    E3|    F3|   NULL|     H3|98765432109876543...|     I3|   NULL|     K3|     L3|2024-02-03|     M3|     N3|   NULL|   NULL|
 +------+------+------+------+-------------------+----------+----------+------+------+-------+-------+--------------------+-------+-------+-------+-------+----------+-------+-------+-------+-------+
 
+
 >>> df.printSchema()
 root
  |-- Field1: string (nullable = false)
@@ -347,8 +348,6 @@ Field10: [["G1","G2",""]]
 >>> schema = parse_xsd("example.xsd", format="polars")
 >>> schema
 {'Field1': String, 'Field2': String, 'Field3': String, 'Field4': String, 'Field5': Datetime(time_unit='ms', time_zone=None), 'Field6': Date, 'Field7': Date, 'Field8': String, 'Field9': String, 'Field10': String, 'Field11': String, 'Field12': Decimal(precision=25, scale=7), 'Field13': String, 'Field14': String, 'Field15': String, 'Field16': String, 'Field17': Date, 'Field18': String, 'Field19': String, 'Field20': Decimal(precision=38, scale=10), 'Field21': Int64}
->>> df = pl.read_c
-pl.read_clipboard(   pl.read_csv(         pl.read_csv_batched(
 >>> df = pl.read_csv("example-data.csv", schema=schema)
 >>> df
 shape: (3, 21)
@@ -369,4 +368,4 @@ shape: (3, 21)
 ## TODO
 
 - [x] Add pyo3/maturin support
-- [ ] Add tests
+- [ ] Add more tests
