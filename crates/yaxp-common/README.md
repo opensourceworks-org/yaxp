@@ -33,4 +33,4 @@ Converts xsd schema to:
 ## TODO
 
 - [x] Add pyo3/maturin support (crate pyaxp)
-- [ ] Add tests
+- [ ] Add more tests

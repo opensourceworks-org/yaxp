@@ -65,4 +65,4 @@ crates
 - [x] Add pyo3/maturin support
 - [ ] add parameter for timezone unit/TZ (testing with polars)
 - [x] Add support for different xsd file encoding: UTF-16, UTF16LE, ...
-- [ ] Add tests
+- [ ] Add more tests
