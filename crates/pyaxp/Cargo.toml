@@ -1,11 +1,11 @@
 [package]
 name = "pyaxp"
-version = "0.1.14"
+version = "0.1.15"
 edition = "2021"
 
 [dependencies]
 pyo3 = { version = "0.23.3", features = ["extension-module", "serde"] }
-yaxp-common = { path = "../yaxp-common", version = "0.1.14" }
+yaxp-common = { path = "../yaxp-common", version = "0.1.15" }
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.138"
 arrow = "54.1.0"

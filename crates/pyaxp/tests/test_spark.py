@@ -25,8 +25,8 @@ data = [
 
 
 spark = SparkSession.builder.master("local").appName("Test Data").getOrCreate()
-j = parse_xsd("example.xsd", "spark")
-spark_schema = StructType.fromJson(json.loads(j))
+schema = parse_xsd("example.xsd", "spark")
+spark_schema = StructType.fromJson(schema)
 df = spark.createDataFrame(data, schema=spark_schema)
 
 

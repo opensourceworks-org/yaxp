@@ -32,9 +32,9 @@ impl FromStr for SchemaFormat {
             "duckdb" => Ok(SchemaFormat::Duckdb),
             "polars" => Ok(SchemaFormat::Polars),
             "json" => Ok(SchemaFormat::Json),
-            "json_schema" => Ok(SchemaFormat::JsonSchema),
+            "json-schema" => Ok(SchemaFormat::JsonSchema),
             "spark" => Ok(SchemaFormat::Spark),
-            _ => Err(format!("Invalid format: {}, Supported formats: arrow, duckdb, json, json_schema, polars, spark. ", s)),
+            _ => Err(format!("Invalid format: {}, Supported formats: arrow, duckdb, json, json-schema, polars, spark. ", s)),
         }
     }
 }
@@ -305,12 +305,10 @@ fn parse_xsd(
                     ))),
                 },
                 SchemaFormat::Spark => match schema.to_spark() {
-                    Ok(spark) => match spark.to_json().unwrap().into_pyobject(py) {
-                        Ok(py_spark) => Ok(py_spark.into()),
-                        _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                            "Error converting to spark",
-                        )),
-                    },
+                    Ok(spark) => {
+                        println!("yes, SPARK!");
+                        Ok(spark.into_pyobject(py)?.into())
+                    }
                     Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
                         "{}",
                         e
@@ -346,7 +344,7 @@ fn parse_xsd(
                     }
                     Ok(py_schema.into_pyobject(py)?.into())
                 } // _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                  //     format!("Invalid format: {}. Supported formats: arrow, duckdb, json, json_schema, polars, spark.", format))),
+                  //     format!("Invalid format: {}. Supported formats: arrow, duckdb, json, json-schema, polars, spark.", format))),
             }
         }
         Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
