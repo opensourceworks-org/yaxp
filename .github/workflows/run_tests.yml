@@ -22,7 +22,6 @@ jobs:
 
       - name: Run unit tests
         run: cargo test
-d
 
   test-pyaxp:
     runs-on: ubuntu-latest
