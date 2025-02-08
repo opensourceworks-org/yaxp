@@ -78,8 +78,8 @@ To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLeve
 25/02/01 16:27:30 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 >>> 25/02/01 16:27:42 WARN GarbageCollectionMetrics: To enable non-built-in garbage collector(s) List(G1 Concurrent GC), users should configure it(them) to spark.eventLog.gcMetrics.youngGenerationGarbageCollectors or spark.eventLog.gcMetrics.oldGenerationGarbageCollectors
 
->>> j = parse_xsd("example.xsd", format="spark")
->>> spark_schema = StructType.fromJson(json.loads(j))
+>>> schema = parse_xsd("example.xsd", format="spark")
+>>> spark_schema = StructType.fromJson(schema)
 >>> df = spark.createDataFrame(data, schema=spark_schema)
 >>>
 >>> df.printSchema()
@@ -338,8 +338,6 @@ Field10: [["G1","G2",""]]
 >>> schema = parse_xsd("example.xsd", format="polars")
 >>> schema
 {'Field1': String, 'Field2': String, 'Field3': String, 'Field4': String, 'Field5': Datetime(time_unit='ms', time_zone=None), 'Field6': Date, 'Field7': Date, 'Field8': String, 'Field9': String, 'Field10': String, 'Field11': String, 'Field12': Decimal(precision=25, scale=7), 'Field13': String, 'Field14': String, 'Field15': String, 'Field16': String, 'Field17': Date, 'Field18': String, 'Field19': String, 'Field20': Decimal(precision=38, scale=10), 'Field21': Int64}
->>> df = pl.read_c
-pl.read_clipboard(   pl.read_csv(         pl.read_csv_batched(
 >>> df = pl.read_csv("example-data.csv", schema=schema)
 >>> df
 shape: (3, 21)
@@ -360,4 +358,4 @@ shape: (3, 21)
 ## TODO
 
 - [x] Add pyo3/maturin support
-- [ ] Add tests
+- [ ] Add more tests
