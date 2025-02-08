@@ -815,220 +815,8 @@ mod tests {
     use std::io::Write;
     use tempfile::tempdir;
 
-    #[test]
-    fn test_timestamp_unit_from_str() {
-        assert_eq!(TimestampUnit::from_str("ns").unwrap(), TimestampUnit::Ns);
-        assert_eq!(TimestampUnit::from_str("ms").unwrap(), TimestampUnit::Ms);
-        assert_eq!(TimestampUnit::from_str("us").unwrap(), TimestampUnit::Us);
-        assert!(TimestampUnit::from_str("invalid").is_err());
-    }
 
-    // #[test]
-    // fn test_timestamp_unit_into_pyobject() {
-    //     Python::with_gil(|py| {
-    //         let unit = TimestampUnit::Ms;
-    //         let py_obj = unit.into_pyobject(py).unwrap();
-    //         assert_eq!(py_obj.extract::<String>().unwrap(), "ms");
-    //     });
-    // }
-
-    #[test]
-    fn test_schema_to_arrow() {
-        let element = SchemaElement {
-            id: "id".to_string(),
-            name: "name".to_string(),
-            data_type: Some("string".to_string()),
-            min_occurs: Some("1".to_string()),
-            max_occurs: Some("1".to_string()),
-            min_length: None,
-            max_length: None,
-            min_inclusive: None,
-            max_inclusive: None,
-            min_exclusive: None,
-            max_exclusive: None,
-            pattern: None,
-            fraction_digits: None,
-            total_digits: None,
-            values: None,
-            is_currency: false,
-            xpath: "/name".to_string(),
-            nullable: Some(true),
-            elements: vec![],
-        };
-
-        let schema_element = SchemaElement {
-            id: "id".to_string(),
-            name: "name".to_string(),
-            data_type: Some("string".to_string()),
-            min_occurs: Some("1".to_string()),
-            max_occurs: Some("1".to_string()),
-            min_length: None,
-            max_length: None,
-            min_inclusive: None,
-            max_inclusive: None,
-            min_exclusive: None,
-            max_exclusive: None,
-            pattern: None,
-            fraction_digits: None,
-            total_digits: None,
-            values: None,
-            is_currency: false,
-            xpath: "/name".to_string(),
-            nullable: Some(true),
-            elements: vec![element],
-        };
-
-        let schema = Schema::new(None, schema_element, None);
-        let arrow_schema = schema.to_arrow().unwrap();
-        assert_eq!(arrow_schema.fields().len(), 1);
-        assert_eq!(arrow_schema.field(0).name(), "name");
-    }
-
-    #[test]
-    fn test_parse_file() {
-        let dir = tempdir().unwrap();
-        let file_path = dir.path().join("test.xsd");
-        let mut file = File::create(&file_path).unwrap();
-        writeln!(
-            file,
-            r#"
-            <schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-                <xs:element name="testElement" type="xs:string"/>
-            </schema>
-            "#
-        )
-        .unwrap();
-
-        let schema = parse_file(file_path.to_str().unwrap(), None, None).unwrap();
-        assert_eq!(schema.schema_element.name, "testElement");
-    }
-
-    #[test]
-    fn test_schema_element_to_arrow() {
-        let element = SchemaElement {
-            id: "id".to_string(),
-            name: "name".to_string(),
-            data_type: Some("string".to_string()),
-            min_occurs: Some("1".to_string()),
-            max_occurs: Some("1".to_string()),
-            min_length: None,
-            max_length: None,
-            min_inclusive: None,
-            max_inclusive: None,
-            min_exclusive: None,
-            max_exclusive: None,
-            pattern: None,
-            fraction_digits: None,
-            total_digits: None,
-            values: None,
-            is_currency: false,
-            xpath: "/name".to_string(),
-            nullable: Some(true),
-            elements: vec![],
-        };
-
-        let data_type = element.to_arrow().unwrap();
-        assert_eq!(data_type, DataType::Utf8);
-    }
-
-    #[test]
-    fn test_schema_element_to_spark() {
-        let element = SchemaElement {
-            id: "id".to_string(),
-            name: "name".to_string(),
-            data_type: Some("string".to_string()),
-            min_occurs: Some("1".to_string()),
-            max_occurs: Some("1".to_string()),
-            min_length: None,
-            max_length: None,
-            min_inclusive: None,
-            max_inclusive: None,
-            min_exclusive: None,
-            max_exclusive: None,
-            pattern: None,
-            fraction_digits: None,
-            total_digits: None,
-            values: None,
-            is_currency: false,
-            xpath: "/name".to_string(),
-            nullable: Some(true),
-            elements: vec![],
-        };
-
-        let spark_field = element.to_spark().unwrap();
-        assert_eq!(spark_field.field_name, "name");
-        assert_eq!(spark_field.field_type, "string");
-    }
-
-    #[test]
-    fn test_schema_element_to_json_schema() {
-        let element = SchemaElement {
-            id: "id".to_string(),
-            name: "name".to_string(),
-            data_type: Some("string".to_string()),
-            min_occurs: Some("1".to_string()),
-            max_occurs: Some("1".to_string()),
-            min_length: None,
-            max_length: None,
-            min_inclusive: None,
-            max_inclusive: None,
-            min_exclusive: None,
-            max_exclusive: None,
-            pattern: None,
-            fraction_digits: None,
-            total_digits: None,
-            values: None,
-            is_currency: false,
-            xpath: "/name".to_string(),
-            nullable: Some(false),
-            elements: vec![],
-        };
-
-        let (json_element, nullable) = element.to_json_schema();
-        assert_eq!(
-            json_element
-                .get("name")
-                .and_then(|v| v.get("type"))
-                .and_then(|v| v.as_str()),
-            Some("string")
-        );
-        assert!(!nullable);
-    }
-
-    #[test]
-    fn test_schema_element_to_duckdb_schema() {
-        let element = SchemaElement {
-            id: "id".to_string(),
-            name: "name".to_string(),
-            data_type: Some("string".to_string()),
-            min_occurs: Some("1".to_string()),
-            max_occurs: Some("1".to_string()),
-            min_length: None,
-            max_length: None,
-            min_inclusive: None,
-            max_inclusive: None,
-            min_exclusive: None,
-            max_exclusive: None,
-            pattern: None,
-            fraction_digits: None,
-            total_digits: None,
-            values: None,
-            is_currency: false,
-            xpath: "/name".to_string(),
-            nullable: Some(true),
-            elements: vec![],
-        };
-
-        let duckdb_schema = element.to_duckdb_schema();
-        dbg!(&duckdb_schema);
-        assert_eq!(
-            duckdb_schema.get("name").unwrap().to_string(),
-            "VARCHAR(255)"
-        );
-    }
-
-    #[test]
-    fn test_duckdb_schema_ordered() {
+    fn create_test_schema() -> Schema{
         let element1 = SchemaElement {
             id: "id".to_string(),
             name: "field1".to_string(),
@@ -1047,7 +835,7 @@ mod tests {
             values: None,
             is_currency: false,
             xpath: "/name".to_string(),
-            nullable: Some(true),
+            nullable: Some(false),
             elements: vec![],
         };
 
@@ -1119,6 +907,96 @@ mod tests {
             },
             timestamp_options: None,
         };
+
+        schema
+    }
+
+    #[test]
+    fn test_timestamp_unit_from_str() {
+        assert_eq!(TimestampUnit::from_str("ns").unwrap(), TimestampUnit::Ns);
+        assert_eq!(TimestampUnit::from_str("ms").unwrap(), TimestampUnit::Ms);
+        assert_eq!(TimestampUnit::from_str("us").unwrap(), TimestampUnit::Us);
+        assert!(TimestampUnit::from_str("invalid").is_err());
+    }
+
+
+    #[test]
+    fn test_schema_to_arrow() {
+
+        let schema = create_test_schema();
+        let arrow_schema = schema.to_arrow().unwrap();
+        assert_eq!(arrow_schema.fields().len(), 3);
+        assert_eq!(arrow_schema.field(0).name(), "field1");
+    }
+
+    #[test]
+    fn test_parse_file() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("test.xsd");
+        let mut file = File::create(&file_path).unwrap();
+        writeln!(
+            file,
+            r#"
+            <schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+                <xs:element name="testElement" type="xs:string"/>
+            </schema>
+            "#
+        )
+        .unwrap();
+
+        let schema = parse_file(file_path.to_str().unwrap(), None, None).unwrap();
+        assert_eq!(schema.schema_element.name, "testElement");
+    }
+
+    #[test]
+    fn test_schema_element_to_arrow() {
+        let schema = create_test_schema();
+        let element = &schema.schema_element.elements[0];
+
+        let data_type = element.to_arrow().unwrap();
+        assert_eq!(data_type, DataType::Utf8);
+    }
+
+    #[test]
+    fn test_schema_element_to_spark() {
+        let schema = create_test_schema();
+        let element = &schema.schema_element.elements[0];
+
+        let spark_field = element.to_spark().unwrap();
+        assert_eq!(spark_field.field_name, "field1");
+        assert_eq!(spark_field.field_type, "string");
+    }
+
+    #[test]
+    fn test_schema_element_to_json_schema() {
+        let schema = create_test_schema();
+        let element = &schema.schema_element.elements[0];
+
+        let (json_element, nullable) = element.to_json_schema();
+        assert_eq!(
+            json_element
+                .get("field1")
+                .and_then(|v| v.get("type"))
+                .and_then(|v| v.as_str()),
+            Some("string")
+        );
+        assert!(!nullable);
+    }
+
+    #[test]
+    fn test_schema_element_to_duckdb_schema() {
+        let schema = create_test_schema();
+        let element = &schema.schema_element.elements[0];
+        let duckdb_schema = element.to_duckdb_schema();
+        assert_eq!(
+            duckdb_schema.get("field1").unwrap().to_string(),
+            "VARCHAR(255)"
+        );
+    }
+
+    #[test]
+    fn test_duckdb_schema_ordered() {
+        let schema = create_test_schema();
 
         let duckdb_schema = schema.to_duckdb_schema();
         dbg!(&duckdb_schema);
