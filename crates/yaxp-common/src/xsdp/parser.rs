@@ -76,7 +76,6 @@ impl<'source> FromPyObject<'source> for TimestampUnit {
         let s: String = <String as FromPyObject>::extract_bound(bound)?;
 
         // clippy advises to replace the closure with the function itself: `PyValueError::new_err`
-        // I'm not sure ...
         // TimestampUnit::from_str(&s).map_err(|e| PyValueError::new_err(e))
         TimestampUnit::from_str(&s).map_err(PyValueError::new_err)
     }
@@ -525,8 +524,8 @@ impl SparkSchema {
         }
     }
 
-    pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
-        let json_output = serde_json::to_string(&self).expect("Failed to serialize JSON");
+    pub fn to_json(&self) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+        let json_output = serde_json::to_value(&self).expect("Failed to serialize JSON");
         Ok(json_output)
     }
 }
@@ -534,8 +533,10 @@ impl SparkSchema {
 #[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone, PartialEq, Eq)]
 pub struct SparkField {
     #[serde(rename = "name")]
+    #[pyo3(item("name"))]
     pub field_name: String,
     #[serde(rename = "type")]
+    #[pyo3(item("type"))]
     pub field_type: String,
     pub nullable: bool,
     pub metadata: Option<HashMap<String, String>>,
