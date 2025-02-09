@@ -96,13 +96,7 @@
     </xs:simpleType>
     <xs:simpleType name="MonthYear">
         <xs:annotation>
-            <xs:documentation>
-string month of a year. An optional day of the month can be appended or an optional week code.
-Valid formats:
-YYYYMM
-YYYYMMDD
-YYYYMMWW
-YYYY = 0000-9999, MM = 01-12, DD = 01-31, WW = w1, w2, w3, w4, w5.
+            <xs:documentation>string month of a year
             </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
