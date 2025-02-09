@@ -19,7 +19,7 @@ Using [roxmltree](https://github.com/RazrFalcon/roxmltree) to parse XML files.
 
 Converts xsd schema to:
 - [x] arrow
-- [ ] avro
+- [x] avro
 - [x] duckdb (read_csv columns/types)
 - [x] json
 - [x] json representation of spark schema

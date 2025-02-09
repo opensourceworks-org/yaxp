@@ -2924,6 +2924,7 @@ dependencies = [
  "clap",
  "encoding_rs",
  "serde",
+ "serde_json",
  "yaxp-common",
 ]
 

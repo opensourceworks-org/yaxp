@@ -33,7 +33,7 @@ Even though arrow might be common to most, each library has its own quirks and l
 
 Converts xsd schema to:
 - [x] arrow
-- [ ] avro
+- [x] avro
 - [x] duckdb (read_csv columns/types)
 - [x] json
 - [x] json representation of spark schema

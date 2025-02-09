@@ -14,6 +14,7 @@ enum OutputFormat {
     JsonSchema,
     Duckdb,
     Polars,
+    Avro,
 }
 
 /// <yaxp-cli ⚡>
@@ -86,6 +87,10 @@ fn main() {
             OutputFormat::Polars => {
                 let polars_schema = schema.to_polars();
                 println!("{:?}", polars_schema);
+            }
+            OutputFormat::Avro => {
+                let avro_schema = schema.to_avro();
+                println!("{}", serde_json::to_string(&avro_schema).unwrap());
             }
         },
         Err(e) => eprintln!("❌ {}", e),

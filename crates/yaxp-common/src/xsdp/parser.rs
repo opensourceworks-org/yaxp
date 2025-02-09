@@ -109,6 +109,20 @@ impl<'source> FromPyObject<'source> for TimestampOptions {
     }
 }
 
+fn map_avro_data_type(dt: &str) -> AvroType {
+    // A very simple mapping; extend as needed.
+    match dt.to_lowercase().as_str() {
+        "string" | "xs:string" => AvroType::Simple("string".to_string()),
+        "int" | "xs:int" => AvroType::Simple("int".to_string()),
+        "long" | "xs:long" => AvroType::Simple("long".to_string()),
+        "float" | "xs:float" => AvroType::Simple("float".to_string()),
+        "double" | "xs:double" => AvroType::Simple("double".to_string()),
+        "boolean" | "xs:boolean" => AvroType::Simple("boolean".to_string()),
+        // Add more mappings as necessary.
+        _ => AvroType::Simple("string".to_string()),
+    }
+}
+
 /// Parsing the XSD file and converting it to various formats begins with a Schema struct
 /// and a SchemaElement struct.  Currently supporting Arrow, Spark, JSON, JSON Schema,
 /// DuckDB, and Polars schemas.
@@ -133,6 +147,19 @@ impl Schema {
             schema_element,
             timestamp_options,
         }
+    }
+
+    pub fn to_avro(&self) -> Result<AvroSchema, Box<dyn std::error::Error>> {
+        let schema = AvroSchema {
+            schema_type: "record".to_string(),
+            name: self.schema_element.name.clone(),
+            namespace: self.namespace.clone(),
+            aliases: None, // Or derive aliases if available.
+            fields: self.schema_element.to_avro_fields(),
+            doc: None,
+        };
+        Ok(schema)
+
     }
 
     pub fn to_arrow(&self) -> Result<ArrowSchema, Box<dyn std::error::Error>> {
@@ -201,6 +228,22 @@ impl Schema {
         })
     }
 
+    // pub fn to_avro(&self) -> Result<String, Box<dyn std::error::Error>> {
+    //     let mut avro_schema = r#"{
+    //         "type": "record",
+    //         "name": "Main_Element",
+    //         "fields": ["#.to_string();
+    //
+    //     for element in &self.schema_element.elements {
+    //         avro_schema.push_str(&element.to_avro_());
+    //         avro_schema.push_str(",");
+    //     }
+    //
+    //     avro_schema.push_str("]}");
+    //
+    //     Ok(avro_schema)
+    // }
+
     pub fn to_duckdb_schema(&self) -> IndexMap<String, String> {
         // self.schema_element.to_duckdb_schema()
         let mut columns = IndexMap::new();
@@ -227,6 +270,7 @@ impl Schema {
 pub struct SchemaElement {
     pub id: String,
     pub name: String,
+    pub documentation: Option<String>,
     #[serde(rename = "dataType")]
     pub data_type: Option<String>,
     #[serde(rename = "minOccurs")]
@@ -435,6 +479,68 @@ impl SchemaElement {
         )
     }
 
+    pub fn to_avro_field(&self) -> AvroField {
+        let base_type = self.to_avro_type();
+        let field_type = if self.nullable.unwrap_or(false) {
+            // Wrap in a union with "null" if nullable.
+            AvroType::Union(vec![
+                AvroType::Simple("null".to_string()),
+                base_type,
+            ])
+        } else {
+            base_type
+        };
+
+        AvroField {
+            name: self.name.clone(),
+            field_type,
+            doc: self.documentation.clone(),
+        }
+    }
+
+    /// Convert self into an Avro type.
+    ///
+    /// - If `elements` is nonempty, we treat this element as an inline record.
+    /// - Else if `values` is present, we treat this element as an enum.
+    /// - Else if a `data_type` is provided, we map it to a primitive.
+    /// - Otherwise, default to a string.
+    pub fn to_avro_type(&self) -> AvroType {
+        if !self.elements.is_empty() {
+            // This element is a record with nested fields.
+            let fields = self.elements.iter().map(|child| child.to_avro_field()).collect();
+            let record = AvroSchema {
+                schema_type: "record".to_string(),
+                name: self.name.clone(),
+                namespace: None, // You could use self.xpath or another property here.
+                aliases: None,
+                doc: self.documentation.clone(),
+                fields,
+            };
+            AvroType::Record(record)
+        } else if let Some(symbols) = &self.values {
+            // This element is treated as an enum.
+            let avro_enum = AvroEnum {
+                schema_type: "enum".to_string(),
+                name: self.name.clone(),
+                symbols: symbols.clone(),
+                doc: self.documentation.clone(),
+                namespace: None,
+            };
+            AvroType::Enum(avro_enum)
+        } else if let Some(dt) = &self.data_type {
+            // Use the provided data type mapping.
+            map_avro_data_type(dt)
+        } else {
+            // Default type.
+            AvroType::Simple("string".to_string())
+        }
+    }
+
+    /// Helper: Convert child elements into a vector of AvroFields.
+    pub fn to_avro_fields(&self) -> Vec<AvroField> {
+        self.elements.iter().map(|child| child.to_avro_field()).collect()
+    }
+
     fn to_duckdb_schema(&self) -> IndexMap<String, String> {
         let mut columns = IndexMap::new();
 
@@ -510,6 +616,68 @@ impl SchemaElement {
 }
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+pub struct AvroSchema {
+    /// Always "record" for a record schema.
+    #[serde(rename = "type")]
+    #[pyo3(item("type"))]
+    pub schema_type: String,
+    /// The name of the record.
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub doc: Option<String>,
+    /// Optional aliases for the record.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub aliases: Option<Vec<String>>,
+    /// The fields of the record.
+    pub fields: Vec<AvroField>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+}
+
+/// Represents a field within a record.
+#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+pub struct AvroField {
+    /// The field name.
+    pub name: String,
+    /// The field type, which might be a simple type (like "long") or a union.
+    #[serde(rename = "type")]
+    #[pyo3(item("type"))]
+    pub field_type: AvroType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub doc: Option<String>,
+}
+
+/// An enumeration of ways to represent a field’s type.
+#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+#[serde(untagged)]
+pub enum AvroType {
+    /// A simple type (like "string", "int", etc.)
+    Simple(String),
+    /// A union of types (for example, a nullable field).
+    Union(Vec<AvroType>),
+    /// An inline record.
+    Record(AvroSchema),
+    /// An enum type.
+    Enum(AvroEnum),
+}
+
+/// A simple representation of an Avro enum.
+#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+pub struct AvroEnum {
+    #[serde(rename = "type")]
+    #[pyo3(item("type"))]
+    pub schema_type: String, // Must be "enum"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub doc: Option<String>,
+    pub name: String,
+    pub symbols: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+}
+
+
+
+#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct SparkSchema {
     #[serde(rename = "type")]
     pub schema_type: String,
@@ -563,6 +731,7 @@ struct SimpleType {
     pattern: Option<String>,
     values: Option<Vec<String>>,
     nullable: Option<bool>,
+    documentation: Option<String>,
 }
 
 // xs:enumeration
@@ -582,6 +751,19 @@ fn extract_enum_values(node: roxmltree::Node) -> Option<Vec<String>> {
     }
 }
 
+// xs:annotation
+fn extract_documentation(node: roxmltree::Node) -> Option<String> {
+    for child in node.children() {
+        if child.tag_name().name() == "documentation" {
+            //dbg!(&child.text().map(String::from));
+            return child.text().map(String::from);
+        }
+    }
+
+
+    None
+}
+
 // from xs:restriction
 fn extract_constraints(node: roxmltree::Node) -> SimpleType {
     let mut simple_type = SimpleType {
@@ -597,6 +779,7 @@ fn extract_constraints(node: roxmltree::Node) -> SimpleType {
         pattern: None,
         values: extract_enum_values(node),
         nullable: None,
+        documentation: extract_documentation(node),
     };
 
     for child in node.children() {
@@ -650,6 +833,8 @@ fn parse_element(
         None => Some("1".to_string()),
     };
 
+    let mut documentation = None;
+
     let mut min_length = None;
     let mut max_length = None;
     let mut min_inclusive = None;
@@ -675,6 +860,7 @@ fn parse_element(
             pattern = global_type.pattern.clone();
             values = global_type.values.clone();
             data_type = global_type.data_type.clone();
+            documentation = global_type.documentation.clone();
         }
     }
 
@@ -698,13 +884,17 @@ fn parse_element(
                         pattern = simple_type.pattern;
                         values = simple_type.values;
                     }
+
                 }
             }
             "complexType" => {
+                //let q = extract_documentation(child);
+
                 for subchild in child.descendants() {
                     if let Some(sub_element) = parse_element(subchild, &xpath, global_types) {
                         elements.push(sub_element);
                     }
+
                 }
             }
             _ => {}
@@ -733,6 +923,7 @@ fn parse_element(
         xpath,
         nullable,
         elements,
+        documentation,
     })
 }
 
@@ -759,16 +950,27 @@ pub fn parse_file(
     doc.root().descendants().for_each(|node| {
         if node.tag_name().name() == "simpleType" {
             if let Some(name) = node.attribute("name") {
+                let mut doc = None;
                 for child in node.children() {
+                    if child.tag_name().name() == "annotation" {
+                        //println!("----------> {:?}", &child);
+                        let d = extract_documentation(child);
+                        if let Some(o) = d {
+                            doc = Some(o.clone());
+                        }
+                    }
                     if child.tag_name().name() == "restriction" {
                         let mut map = global_types.lock().unwrap();
-                        map.insert(name.to_string(), extract_constraints(child));
-                        // global_types.insert(name.clone().to_string(), extract_constraints(child));
+                        let mut st = extract_constraints(child);
+                        st.documentation = doc.clone();
+                        map.insert(name.to_string(), st);
                     }
+
                 }
             }
         }
     });
+
 
     let final_map = Arc::try_unwrap(global_types)
         .expect("Arc should have no other refs")
@@ -789,9 +991,13 @@ pub fn parse_file(
 
     let mut schema_element = None;
 
+    // let mut documentation = None;
+
     for node in doc.root().descendants() {
         if node.tag_name().name() == "element" {
             schema_element = parse_element(node, node.attribute("name").unwrap(), &final_map);
+            //schema_element.unwrap().documentation = extract_documentation(node);
+            // schema_element.as_mut().unwrap().documentation = documentation.clone();
             break;
         }
     }
@@ -838,6 +1044,7 @@ mod tests {
             xpath: "/name".to_string(),
             nullable: Some(false),
             elements: vec![],
+            documentation: Some("This is the first test field".to_string()),
         };
 
         let element2 = SchemaElement {
@@ -860,6 +1067,7 @@ mod tests {
             xpath: "/name".to_string(),
             nullable: Some(true),
             elements: vec![],
+            documentation: Some("This is the second test field".to_string()),
         };
         let element3 = SchemaElement {
             id: "id".to_string(),
@@ -881,6 +1089,7 @@ mod tests {
             xpath: "/name".to_string(),
             nullable: Some(true),
             elements: vec![],
+            documentation: Some("This is the third and last test field".to_string()),
         };
 
         let schema = Schema {
@@ -905,6 +1114,7 @@ mod tests {
                 xpath: "/name".to_string(),
                 nullable: Some(true),
                 elements: vec![element1, element2, element3],
+                documentation: Some("This is the main schema".to_string()),
             },
             timestamp_options: None,
         };
@@ -1015,6 +1225,13 @@ mod tests {
         );
     }
 
+    // #[test]
+    // fn test_schema_to_avro(){
+    //     let schema = create_test_schema();
+    //     let avro_schema = schema.to_avro().unwrap();
+    //     assert_eq!(avro_schema.)
+    // }
+
     #[test]
     fn test_extract_enum_values() {
         let xml = r#"
@@ -1054,5 +1271,47 @@ mod tests {
         let element = parse_element(node, "", &HashMap::new()).unwrap();
         assert_eq!(element.name, "testElement");
         assert_eq!(element.data_type, Some("string".to_string()));
+    }
+
+    #[test]
+    fn test_extract_documentation(){
+        let xml = r#"
+            <annotation>
+                <documentation>This is a test element</documentation>
+            </annotation>
+        "#;
+        let doc = Document::parse(xml).unwrap();
+        let node = doc.root().first_child().unwrap();
+        let documentation = extract_documentation(node);
+        assert_eq!(documentation, Some("This is a test element".to_string()));
+    }
+
+    #[test]
+    fn test_avro_schema_serialization() {
+        // Create an Avro schema corresponding to the sample JSON.
+        let schema = AvroSchema {
+            schema_type: "record".to_string(),
+            namespace: Some("example.avro".to_string()),
+            name: "LongList".to_string(),
+            doc: Some("Linked list of 64-bit longs.".to_string()),
+            aliases: Some(vec!["LinkedLongs".to_string()]),
+            fields: vec![
+                AvroField {
+                    name: "value".to_string(),
+                    field_type: AvroType::Simple("long".to_string()),
+                    doc: Some("The value of the node.".to_string()),
+                },
+                AvroField {
+                    name: "next".to_string(),
+                    field_type: AvroType::Union(vec![
+                        AvroType::Simple("null".to_string()),
+                        AvroType::Simple("LongList".to_string()),
+                    ]),
+                    doc: Some("The next node in the list.".to_string()),
+                },
+            ],
+        };
+        assert_eq!(schema.fields.len(), 2);
+        assert_eq!(schema.doc, Some("Linked list of 64-bit longs.".to_string()));
     }
 }

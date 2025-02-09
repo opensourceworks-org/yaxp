@@ -17,6 +17,7 @@ use yaxp_common::xsdp::parser::TimestampOptions;
 #[derive(Debug, Clone)]
 enum SchemaFormat {
     Arrow,
+    Avro,
     Duckdb,
     Polars,
     Json,
@@ -34,6 +35,7 @@ impl FromStr for SchemaFormat {
             "json" => Ok(SchemaFormat::Json),
             "json-schema" => Ok(SchemaFormat::JsonSchema),
             "spark" => Ok(SchemaFormat::Spark),
+            "avro" => Ok(SchemaFormat::Avro),
             _ => Err(format!("Invalid format: {}, Supported formats: arrow, duckdb, json, json-schema, polars, spark. ", s)),
         }
     }
@@ -292,6 +294,18 @@ fn parse_xsd(
                     Ok(py_schema) => Ok(py_schema.into()),
                     Err(e) => Err(e),
                 },
+                SchemaFormat::Avro => match schema.to_avro() {
+                    Ok(avro_schema) => match avro_schema.into_pyobject(py) {
+                        Ok(py_avro) => Ok(py_avro.into_pyobject(py)?.into()),
+                        _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                            "Error converting to avro",
+                        )),
+                    },
+                    Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                        "{}",
+                        e
+                    ))),
+                },
                 SchemaFormat::Arrow => match schema.to_arrow() {
                     Ok(arrow_schema) => match arrow_schema.to_pyarrow_schema(py) {
                         Ok(py_arrow) => Ok(py_arrow),
@@ -309,7 +323,9 @@ fn parse_xsd(
                         let pyspark_module = PyModule::import(py, "pyspark.sql.types")?;
                         let pyspark_struct_type = pyspark_module.getattr("StructType")?;
                         let dict_schema = spark.into_pyobject(py)?;
-                        let py_struct_type = pyspark_struct_type.getattr("fromJson")?.call1((dict_schema,))?;
+                        let py_struct_type = pyspark_struct_type
+                            .getattr("fromJson")?
+                            .call1((dict_schema,))?;
                         Ok(py_struct_type.into())
                     }
                     Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
