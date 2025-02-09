@@ -12,7 +12,7 @@
 
 # **<yaxp ⚡> Yet Another XSD Parser**
 
-> ⚠️ **Deprecated:** This crate has been replaced with [yaxp-core](../yaxp-core/README.md).
+> 📌 **Note:** This project is still under heavy development, and its APIs are subject to change.
 
 
 ## Introduction

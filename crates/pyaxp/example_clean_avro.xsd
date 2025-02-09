@@ -21,7 +21,7 @@
     </xs:simpleType>
     <xs:simpleType name="PriceMode">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="%"/>
+            <xs:enumeration value="PERCENT"/>
             <xs:enumeration value="P"/>
             <xs:enumeration value="R"/>
         </xs:restriction>

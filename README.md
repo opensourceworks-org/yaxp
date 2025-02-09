@@ -11,6 +11,12 @@
   <a href="https://crates.io/crates/yaxp-common">
     <img alt="downloads" src="https://img.shields.io/crates/d/yaxp-cli?label=yaxp-cli downloads">
   </a>
+  <a href="https://crates.io/crates/yaxp-core">
+    <img alt="downloads" src="https://img.shields.io/crates/d/yaxp-core?label=yaxp-core downloads">
+  </a>
+  <a href="https://crates.io/crates/yaxp-core">
+    <img alt="versions" src="https://img.shields.io/crates/v/yaxp-core?label=yaxp-core">
+  </a>
   <a href="https://pypi.org/project/pyaxp/">
     <img alt="version" src="https://img.shields.io/pypi/v/pyaxp.svg?label=pyaxp">
   </a>  
@@ -33,7 +39,7 @@ Even though arrow might be common to most, each library has its own quirks and l
 
 Converts xsd schema to:
 - [x] arrow
-- [ ] avro
+- [x] avro
 - [x] duckdb (read_csv columns/types)
 - [x] json
 - [x] json representation of spark schema
@@ -48,12 +54,14 @@ Converts xsd schema to:
 crates
 ├── pyaxp               -> Python bindings 
 ├── yaxp-cli            -> cli version
-└── yaxp-common         -> lib
+├── yaxp-common         -> lib (deprecated, replaced by yaxp-core
+└── yaxp-core           -> main lib crate, core
+
 ```
 
 ## Downloads
 
-- [yaxp-common](https://crates.io/crates/yaxp-common) main lib crate, core
+- [yaxp-core](https://crates.io/crates/yaxp-core) main lib crate, core
 - [yaxp-cli](https://crates.io/crates/yaxp-cli) cli interface on yaxp-common
 - [pyaxp](https://pypi.org/project/pyaxp/) python bindings
 
