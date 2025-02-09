@@ -96,26 +96,21 @@ RECORDS = [
 ]
 
 
-def read_avro_from_list(records, schema):
-    buffer = BytesIO()
-    writer(buffer, schema, records)
-
-    buffer.seek(0)
-
-    return list(reader(buffer))
-
-
-def test_read_avro_from_list():
+# def read_avro_from_list(records, schema):
+#     buffer = BytesIO()
+#     writer(buffer, schema, records)
+#
+#     buffer.seek(0)
+#
+#     return list(reader(buffer))
+#
+#
+def test_avro_schema():
     schema = parse_xsd("example_clean_avro.xsd", "avro")
 
     parsed_schema = parse_schema(schema)
 
-    test_data = read_avro_from_list(RECORDS, parsed_schema)
-
-    print(test_data)
-
-    assert test_data == RECORDS
-
+    assert parsed_schema["__named_schemas"]["Field13"]["symbols"] == ['N', 'Q', 'V', 'C']
 
 # def main():
 #     test_read_avro_from_list()

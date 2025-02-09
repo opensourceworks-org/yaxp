@@ -122,10 +122,10 @@ fn map_avro_data_type(dt: &str) -> AvroType {
         "string" | "xs:string" => AvroType::Simple("string".to_string()),
 
         // logical types (these are typically built on top of primitive types)
-        "date" | "xs:date" => AvroType::Simple("date".to_string()),
-        "time-millis" | "xs:time" => AvroType::Simple("time-millis".to_string()),
-        "timestamp-millis" | "xs:datetime" => AvroType::Simple("timestamp-millis".to_string()),
-        "timestamp-micros" => AvroType::Simple("timestamp-micros".to_string()),
+        "date" | "xs:date" => AvroType::Logical { base: "int".to_string(), logical: "date".to_string() },
+        "time-millis" | "xs:time" => AvroType::Logical { base: "int".to_string(), logical: "time-millis".to_string() },
+        "timestamp-millis" | "xs:datetime" => AvroType::Logical { base: "long".to_string(), logical: "timestamp-millis".to_string() },
+        "timestamp-micros" => AvroType::Logical { base: "long".to_string(), logical: "timestamp-micros".to_string() },
 
         // complex types (placeholders – constructing full schemas for these requires extra info)
         "array" => AvroType::Simple("array".to_string()),
@@ -614,6 +614,10 @@ pub struct AvroField {
     pub doc: Option<String>,
 }
 
+// #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+// pub struct AvroLogical {
+//
+// }
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 #[serde(untagged)]
 pub enum AvroType {
@@ -624,6 +628,13 @@ pub enum AvroType {
     /// inline record.
     Record(AvroSchema),
     Enum(AvroEnum),
+    Logical {
+        #[serde(rename = "type")]
+        #[pyo3(item("type"))]
+        base: String,
+        #[serde(rename = "logicalType")]
+        #[pyo3(item("logicalType"))]
+        logical: String },
 }
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
