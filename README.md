@@ -8,7 +8,7 @@
   <a href="https://crates.io/crates/yaxp-cli">
     <img alt="versions" src="https://img.shields.io/crates/v/yaxp-cli?label=yaxp-cli">
   </a>
-  <a href="https://crates.io/crates/yaxp-common">
+  <a href="https://crates.io/crates/yaxp-cli">
     <img alt="downloads" src="https://img.shields.io/crates/d/yaxp-cli?label=yaxp-cli downloads">
   </a>
   <a href="https://crates.io/crates/yaxp-core">
