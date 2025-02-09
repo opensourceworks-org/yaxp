@@ -159,7 +159,6 @@ impl Schema {
             doc: None,
         };
         Ok(schema)
-
     }
 
     pub fn to_arrow(&self) -> Result<ArrowSchema, Box<dyn std::error::Error>> {
@@ -227,22 +226,6 @@ impl Schema {
             "required": required
         })
     }
-
-    // pub fn to_avro(&self) -> Result<String, Box<dyn std::error::Error>> {
-    //     let mut avro_schema = r#"{
-    //         "type": "record",
-    //         "name": "Main_Element",
-    //         "fields": ["#.to_string();
-    //
-    //     for element in &self.schema_element.elements {
-    //         avro_schema.push_str(&element.to_avro_());
-    //         avro_schema.push_str(",");
-    //     }
-    //
-    //     avro_schema.push_str("]}");
-    //
-    //     Ok(avro_schema)
-    // }
 
     pub fn to_duckdb_schema(&self) -> IndexMap<String, String> {
         // self.schema_element.to_duckdb_schema()
@@ -402,10 +385,6 @@ impl SchemaElement {
     }
 
     fn to_json_schema(&self) -> (serde_json::Value, bool) {
-        // let mut properties = serde_json::Map::new();
-        // let mut required = vec![];
-
-        // for element in &self.elements {
         let mut field_type = serde_json::Map::new();
         let base_type = match self.data_type.as_deref() {
             Some("string") => json!("string"),
@@ -458,18 +437,6 @@ impl SchemaElement {
             }
         }
 
-        // properties.insert(element.name.clone(), serde_json::Value::Object(field_type));
-        // if element.nullable == Some(false) {
-        //     required.push(element.name.clone());
-        // }
-        // }
-
-        // json!({
-        //     "type": "object",
-        //     "properties": properties,
-        //     "required": required,
-        // })
-
         (
             json!({
                 &self.name: field_type
@@ -482,11 +449,7 @@ impl SchemaElement {
     pub fn to_avro_field(&self) -> AvroField {
         let base_type = self.to_avro_type();
         let field_type = if self.nullable.unwrap_or(false) {
-            // Wrap in a union with "null" if nullable.
-            AvroType::Union(vec![
-                AvroType::Simple("null".to_string()),
-                base_type,
-            ])
+            AvroType::Union(vec![AvroType::Simple("null".to_string()), base_type])
         } else {
             base_type
         };
@@ -498,27 +461,23 @@ impl SchemaElement {
         }
     }
 
-    /// Convert self into an Avro type.
-    ///
-    /// - If `elements` is nonempty, we treat this element as an inline record.
-    /// - Else if `values` is present, we treat this element as an enum.
-    /// - Else if a `data_type` is provided, we map it to a primitive.
-    /// - Otherwise, default to a string.
     pub fn to_avro_type(&self) -> AvroType {
         if !self.elements.is_empty() {
-            // This element is a record with nested fields.
-            let fields = self.elements.iter().map(|child| child.to_avro_field()).collect();
+            let fields = self
+                .elements
+                .iter()
+                .map(|child| child.to_avro_field())
+                .collect();
             let record = AvroSchema {
                 schema_type: "record".to_string(),
                 name: self.name.clone(),
-                namespace: None, // You could use self.xpath or another property here.
+                namespace: None,
                 aliases: None,
                 doc: self.documentation.clone(),
                 fields,
             };
             AvroType::Record(record)
         } else if let Some(symbols) = &self.values {
-            // This element is treated as an enum.
             let avro_enum = AvroEnum {
                 schema_type: "enum".to_string(),
                 name: self.name.clone(),
@@ -528,23 +487,23 @@ impl SchemaElement {
             };
             AvroType::Enum(avro_enum)
         } else if let Some(dt) = &self.data_type {
-            // Use the provided data type mapping.
             map_avro_data_type(dt)
         } else {
-            // Default type.
+            // default type.
             AvroType::Simple("string".to_string())
         }
     }
 
-    /// Helper: Convert child elements into a vector of AvroFields.
     pub fn to_avro_fields(&self) -> Vec<AvroField> {
-        self.elements.iter().map(|child| child.to_avro_field()).collect()
+        self.elements
+            .iter()
+            .map(|child| child.to_avro_field())
+            .collect()
     }
 
     fn to_duckdb_schema(&self) -> IndexMap<String, String> {
         let mut columns = IndexMap::new();
 
-        // for element in &self.elements {
         let column_type = match self.data_type.as_deref() {
             Some("string") => format!("VARCHAR({})", self.max_length.as_deref().unwrap_or("255")),
             Some("integer") => "INTEGER".to_string(),
@@ -559,7 +518,6 @@ impl SchemaElement {
         };
 
         columns.insert(self.name.clone(), column_type);
-        //}
 
         columns
     }
@@ -617,29 +575,22 @@ impl SchemaElement {
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct AvroSchema {
-    /// Always "record" for a record schema.
     #[serde(rename = "type")]
     #[pyo3(item("type"))]
     pub schema_type: String,
-    /// The name of the record.
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub doc: Option<String>,
-    /// Optional aliases for the record.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub aliases: Option<Vec<String>>,
-    /// The fields of the record.
     pub fields: Vec<AvroField>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
 }
 
-/// Represents a field within a record.
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct AvroField {
-    /// The field name.
     pub name: String,
-    /// The field type, which might be a simple type (like "long") or a union.
     #[serde(rename = "type")]
     #[pyo3(item("type"))]
     pub field_type: AvroType,
@@ -647,26 +598,23 @@ pub struct AvroField {
     pub doc: Option<String>,
 }
 
-/// An enumeration of ways to represent a field’s type.
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 #[serde(untagged)]
 pub enum AvroType {
-    /// A simple type (like "string", "int", etc.)
+    /// simple type (like "string", "int", etc.)
     Simple(String),
-    /// A union of types (for example, a nullable field).
+    /// union of types (ie. a nullable field).
     Union(Vec<AvroType>),
-    /// An inline record.
+    /// inline record.
     Record(AvroSchema),
-    /// An enum type.
     Enum(AvroEnum),
 }
 
-/// A simple representation of an Avro enum.
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct AvroEnum {
     #[serde(rename = "type")]
     #[pyo3(item("type"))]
-    pub schema_type: String, // Must be "enum"
+    pub schema_type: String, // must be "enum"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub doc: Option<String>,
     pub name: String,
@@ -674,8 +622,6 @@ pub struct AvroEnum {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
 }
-
-
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct SparkSchema {
@@ -759,7 +705,6 @@ fn extract_documentation(node: roxmltree::Node) -> Option<String> {
             return child.text().map(String::from);
         }
     }
-
 
     None
 }
@@ -884,7 +829,6 @@ fn parse_element(
                         pattern = simple_type.pattern;
                         values = simple_type.values;
                     }
-
                 }
             }
             "complexType" => {
@@ -894,7 +838,6 @@ fn parse_element(
                     if let Some(sub_element) = parse_element(subchild, &xpath, global_types) {
                         elements.push(sub_element);
                     }
-
                 }
             }
             _ => {}
@@ -965,12 +908,10 @@ pub fn parse_file(
                         st.documentation = doc.clone();
                         map.insert(name.to_string(), st);
                     }
-
                 }
             }
         }
     });
-
 
     let final_map = Arc::try_unwrap(global_types)
         .expect("Arc should have no other refs")
@@ -1022,8 +963,7 @@ mod tests {
     use std::io::Write;
     use tempfile::tempdir;
 
-
-    fn create_test_schema() -> Schema{
+    fn create_test_schema() -> Schema {
         let element1 = SchemaElement {
             id: "id".to_string(),
             name: "field1".to_string(),
@@ -1130,10 +1070,8 @@ mod tests {
         assert!(TimestampUnit::from_str("invalid").is_err());
     }
 
-
     #[test]
     fn test_schema_to_arrow() {
-
         let schema = create_test_schema();
         let arrow_schema = schema.to_arrow().unwrap();
         assert_eq!(arrow_schema.fields().len(), 3);
@@ -1274,7 +1212,7 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_documentation(){
+    fn test_extract_documentation() {
         let xml = r#"
             <annotation>
                 <documentation>This is a test element</documentation>
