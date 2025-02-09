@@ -1,6 +1,6 @@
 [package]
 name = "yaxp-core"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Jeroen <jeroen@flexworks.eu>"]
 description = "<yaxp-cli ⚡> Yet Another XML Parser"
