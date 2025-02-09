@@ -1,0 +1,42 @@
+name: Build & publish yaxp-core to crates.io
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'crates/yaxp-core/src/**'
+#  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/yaxp-core
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run unit tests
+        run: cargo test
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Publish crate
+        working-directory: crates/yaxp-core
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish

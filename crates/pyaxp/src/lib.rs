@@ -11,8 +11,8 @@ use pyo3::types::PyDict;
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
-use yaxp_common::xsdp::parser::parse_file;
-use yaxp_common::xsdp::parser::TimestampOptions;
+use yaxp_core::xsdp::parser::parse_file;
+use yaxp_core::xsdp::parser::TimestampOptions;
 
 #[derive(Debug, Clone)]
 enum SchemaFormat {

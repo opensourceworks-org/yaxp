@@ -2008,7 +2008,7 @@ dependencies = [
 
 [[package]]
 name = "pyaxp"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "arrow",
  "encoding_rs",
@@ -2016,7 +2016,7 @@ dependencies = [
  "pyo3",
  "serde",
  "serde_json",
- "yaxp-common",
+ "yaxp-core",
 ]
 
 [[package]]
@@ -2919,18 +2919,35 @@ checksum = "fdd20c5420375476fbd4394763288da7eb0cc0b8c11deed431a91562af7335d3"
 
 [[package]]
 name = "yaxp-cli"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "clap",
  "encoding_rs",
  "serde",
  "serde_json",
- "yaxp-common",
+ "yaxp-core",
 ]
 
 [[package]]
 name = "yaxp-common"
-version = "0.1.16"
+version = "0.1.17"
+dependencies = [
+ "arrow",
+ "encoding_rs",
+ "encoding_rs_io",
+ "indexmap",
+ "polars",
+ "pyo3",
+ "rayon",
+ "roxmltree",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "yaxp-core"
+version = "0.1.0"
 dependencies = [
  "arrow",
  "encoding_rs",

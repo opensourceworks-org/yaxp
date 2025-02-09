@@ -1,8 +1,8 @@
 use clap::Parser;
 use encoding_rs::{Encoding, UTF_8};
 use serde::Serialize;
-use yaxp_common::xsdp::parser::parse_file;
-use yaxp_common::xsdp::parser::{TimestampOptions, TimestampUnit};
+use yaxp_core::xsdp::parser::parse_file;
+use yaxp_core::xsdp::parser::{TimestampOptions, TimestampUnit};
 
 #[derive(clap::ValueEnum, Clone, Default, Debug, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -90,7 +90,10 @@ fn main() {
             }
             OutputFormat::Avro => {
                 let avro_schema = schema.to_avro();
-                println!("{}", serde_json::to_string(&avro_schema).unwrap());
+                match avro_schema {
+                    Ok(avro_schema) => println!("{}", serde_json::to_string(&avro_schema).unwrap()),
+                    Err(e) => eprintln!("❌ {}", e),
+                }
             }
         },
         Err(e) => eprintln!("❌ {}", e),
