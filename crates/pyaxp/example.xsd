@@ -13,7 +13,7 @@
     </xs:simpleType>
     <xs:simpleType name="nonNegativeDecimal">
         <xs:annotation>
-            <xs:documentation>Represents any decimal value >= 0.</xs:documentation>
+            <xs:documentation>any decimal value >= 0</xs:documentation>
         </xs:annotation>
         <xs:restriction base="decimal257">
             <xs:minInclusive value="0"/>
@@ -90,14 +90,14 @@
     </xs:simpleType>
     <xs:simpleType name="Percentage">
         <xs:annotation>
-            <xs:documentation>decimal representing a percentage (e.g. .05 represents 5% and .9525 represents 95.25%).  Note the number of decimal places may vary.</xs:documentation>
+            <xs:documentation>decimal representing a percentage (ie. .08 -> 8% and .7523 -> 72.23%)</xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:decimal"/>
     </xs:simpleType>
     <xs:simpleType name="MonthYear">
         <xs:annotation>
             <xs:documentation>
-string field representing month of a year. An optional day of the month  can be appended or an optional week code.
+string month of a year. An optional day of the month can be appended or an optional week code.
 Valid formats:
 YYYYMM
 YYYYMMDD

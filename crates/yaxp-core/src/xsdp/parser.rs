@@ -110,15 +110,31 @@ impl<'source> FromPyObject<'source> for TimestampOptions {
 }
 
 fn map_avro_data_type(dt: &str) -> AvroType {
-    // A very simple mapping; extend as needed.
     match dt.to_lowercase().as_str() {
-        "string" | "xs:string" => AvroType::Simple("string".to_string()),
+        // primitive types
+        "null" | "xs:null" => AvroType::Simple("null".to_string()),
+        "boolean" | "xs:boolean" => AvroType::Simple("boolean".to_string()),
         "int" | "xs:int" => AvroType::Simple("int".to_string()),
         "long" | "xs:long" => AvroType::Simple("long".to_string()),
         "float" | "xs:float" => AvroType::Simple("float".to_string()),
         "double" | "xs:double" => AvroType::Simple("double".to_string()),
-        "boolean" | "xs:boolean" => AvroType::Simple("boolean".to_string()),
-        // Add more mappings as necessary.
+        "bytes" | "xs:bytes" | "xs:base64binary" => AvroType::Simple("bytes".to_string()),
+        "string" | "xs:string" => AvroType::Simple("string".to_string()),
+
+        // logical types (these are typically built on top of primitive types)
+        "date" | "xs:date" => AvroType::Simple("date".to_string()),
+        "time-millis" | "xs:time" => AvroType::Simple("time-millis".to_string()),
+        "timestamp-millis" | "xs:datetime" => AvroType::Simple("timestamp-millis".to_string()),
+        "timestamp-micros" => AvroType::Simple("timestamp-micros".to_string()),
+
+        // complex types (placeholders – constructing full schemas for these requires extra info)
+        "array" => AvroType::Simple("array".to_string()),
+        "map" => AvroType::Simple("map".to_string()),
+        "record" => AvroType::Simple("record".to_string()),
+        "enum" => AvroType::Simple("enum".to_string()),
+        "fixed" => AvroType::Simple("fixed".to_string()),
+
+        // default to "string"
         _ => AvroType::Simple("string".to_string()),
     }
 }
@@ -1226,7 +1242,6 @@ mod tests {
 
     #[test]
     fn test_avro_schema_serialization() {
-        // Create an Avro schema corresponding to the sample JSON.
         let schema = AvroSchema {
             schema_type: "record".to_string(),
             namespace: Some("example.avro".to_string()),
