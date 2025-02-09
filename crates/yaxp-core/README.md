@@ -1,12 +1,12 @@
 <p align="center">
-  <a href="https://crates.io/crates/yaxp-common">
-    <img alt="versions" src="https://img.shields.io/crates/v/yaxp-common">
+  <a href="https://crates.io/crates/yaxp-core">
+    <img alt="versions" src="https://img.shields.io/crates/v/yaxp-core">
   </a>
-  <a href="https://crates.io/crates/yaxp-common">
-    <img alt="downloads" src="https://img.shields.io/crates/d/yaxp-common">
+  <a href="https://crates.io/crates/yaxp-core">
+    <img alt="downloads" src="https://img.shields.io/crates/d/yaxp-core">
   </a>
-  <a href="https://github.com/opensourceworks-org/yaxp/blob/main/crates/yaxp-common/README.md">
-    <img alt="pipelines" src="https://img.shields.io/github/actions/workflow/status/opensourceworks-org/yaxp/yaxp-common-ci.yml?logo=github">
+  <a href="https://github.com/opensourceworks-org/yaxp/blob/main/crates/yaxp-core/README.md">
+    <img alt="pipelines" src="https://img.shields.io/github/actions/workflow/status/opensourceworks-org/yaxp/yaxp-core.yml?logo=github">
   </a>
 </p>
 
