@@ -110,7 +110,6 @@ impl<'source> FromPyObject<'source> for TimestampOptions {
 }
 
 fn map_avro_data_type(dt: &str) -> AvroType {
-    // A very simple mapping; extend as needed.
     match dt.to_lowercase().as_str() {
         "string" | "xs:string" => AvroType::Simple("string".to_string()),
         "int" | "xs:int" => AvroType::Simple("int".to_string()),
@@ -118,7 +117,6 @@ fn map_avro_data_type(dt: &str) -> AvroType {
         "float" | "xs:float" => AvroType::Simple("float".to_string()),
         "double" | "xs:double" => AvroType::Simple("double".to_string()),
         "boolean" | "xs:boolean" => AvroType::Simple("boolean".to_string()),
-        // Add more mappings as necessary.
         _ => AvroType::Simple("string".to_string()),
     }
 }
@@ -154,7 +152,7 @@ impl Schema {
             schema_type: "record".to_string(),
             name: self.schema_element.name.clone(),
             namespace: self.namespace.clone(),
-            aliases: None, // Or derive aliases if available.
+            aliases: None,
             fields: self.schema_element.to_avro_fields(),
             doc: None,
         };
@@ -228,21 +226,6 @@ impl Schema {
         })
     }
 
-    // pub fn to_avro(&self) -> Result<String, Box<dyn std::error::Error>> {
-    //     let mut avro_schema = r#"{
-    //         "type": "record",
-    //         "name": "Main_Element",
-    //         "fields": ["#.to_string();
-    //
-    //     for element in &self.schema_element.elements {
-    //         avro_schema.push_str(&element.to_avro_());
-    //         avro_schema.push_str(",");
-    //     }
-    //
-    //     avro_schema.push_str("]}");
-    //
-    //     Ok(avro_schema)
-    // }
 
     pub fn to_duckdb_schema(&self) -> IndexMap<String, String> {
         // self.schema_element.to_duckdb_schema()
@@ -482,7 +465,6 @@ impl SchemaElement {
     pub fn to_avro_field(&self) -> AvroField {
         let base_type = self.to_avro_type();
         let field_type = if self.nullable.unwrap_or(false) {
-            // Wrap in a union with "null" if nullable.
             AvroType::Union(vec![
                 AvroType::Simple("null".to_string()),
                 base_type,
@@ -498,27 +480,20 @@ impl SchemaElement {
         }
     }
 
-    /// Convert self into an Avro type.
-    ///
-    /// - If `elements` is nonempty, we treat this element as an inline record.
-    /// - Else if `values` is present, we treat this element as an enum.
-    /// - Else if a `data_type` is provided, we map it to a primitive.
-    /// - Otherwise, default to a string.
+
     pub fn to_avro_type(&self) -> AvroType {
         if !self.elements.is_empty() {
-            // This element is a record with nested fields.
             let fields = self.elements.iter().map(|child| child.to_avro_field()).collect();
-            let record = AvroSchema {
+            let record: AvroSchema = AvroSchema {
                 schema_type: "record".to_string(),
                 name: self.name.clone(),
-                namespace: None, // You could use self.xpath or another property here.
+                namespace: None,
                 aliases: None,
                 doc: self.documentation.clone(),
                 fields,
             };
             AvroType::Record(record)
         } else if let Some(symbols) = &self.values {
-            // This element is treated as an enum.
             let avro_enum = AvroEnum {
                 schema_type: "enum".to_string(),
                 name: self.name.clone(),
@@ -528,15 +503,13 @@ impl SchemaElement {
             };
             AvroType::Enum(avro_enum)
         } else if let Some(dt) = &self.data_type {
-            // Use the provided data type mapping.
             map_avro_data_type(dt)
         } else {
-            // Default type.
+            // default type.
             AvroType::Simple("string".to_string())
         }
     }
 
-    /// Helper: Convert child elements into a vector of AvroFields.
     pub fn to_avro_fields(&self) -> Vec<AvroField> {
         self.elements.iter().map(|child| child.to_avro_field()).collect()
     }
@@ -617,29 +590,22 @@ impl SchemaElement {
 
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct AvroSchema {
-    /// Always "record" for a record schema.
     #[serde(rename = "type")]
     #[pyo3(item("type"))]
     pub schema_type: String,
-    /// The name of the record.
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub doc: Option<String>,
-    /// Optional aliases for the record.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub aliases: Option<Vec<String>>,
-    /// The fields of the record.
     pub fields: Vec<AvroField>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
 }
 
-/// Represents a field within a record.
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct AvroField {
-    /// The field name.
     pub name: String,
-    /// The field type, which might be a simple type (like "long") or a union.
     #[serde(rename = "type")]
     #[pyo3(item("type"))]
     pub field_type: AvroType,
@@ -647,26 +613,20 @@ pub struct AvroField {
     pub doc: Option<String>,
 }
 
-/// An enumeration of ways to represent a field’s type.
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 #[serde(untagged)]
 pub enum AvroType {
-    /// A simple type (like "string", "int", etc.)
     Simple(String),
-    /// A union of types (for example, a nullable field).
     Union(Vec<AvroType>),
-    /// An inline record.
     Record(AvroSchema),
-    /// An enum type.
     Enum(AvroEnum),
 }
 
-/// A simple representation of an Avro enum.
 #[derive(Serialize, Deserialize, Debug, IntoPyObject)]
 pub struct AvroEnum {
     #[serde(rename = "type")]
     #[pyo3(item("type"))]
-    pub schema_type: String, // Must be "enum"
+    pub schema_type: String, // must be "enum"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub doc: Option<String>,
     pub name: String,
