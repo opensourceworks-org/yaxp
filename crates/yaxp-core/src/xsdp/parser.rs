@@ -5,15 +5,20 @@ use indexmap::IndexMap;
 use polars::datatypes::TimeUnit as PolarsTimeUnit;
 use polars::datatypes::{DataType as PolarsDataType, PlSmallStr};
 use polars::prelude::Schema as PolarsSchema;
+#[cfg(feature = "python")]
 use pyo3::exceptions::PyValueError;
+#[cfg(feature = "python")]
 use pyo3::prelude::{PyAnyMethods, PyDictMethods};
+#[cfg(feature = "python")]
 use pyo3::types::{PyDict, PyString};
+#[cfg(feature = "python")]
 use pyo3::{Bound, FromPyObject, IntoPyObject, PyAny, PyResult, Python};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use roxmltree::Document;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
+#[cfg(feature = "python")]
 use std::convert::Infallible;
 use std::fs::File;
 use std::io::Read;
@@ -45,6 +50,7 @@ impl FromStr for TimestampUnit {
     }
 }
 
+#[cfg(feature = "python")]
 impl<'py> IntoPyObject<'py> for TimestampUnit {
     type Target = <&'py str as IntoPyObject<'py>>::Target;
     type Output = <&'py str as IntoPyObject<'py>>::Output;
@@ -66,12 +72,14 @@ impl fmt::Display for TimestampUnit {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "python", derive(IntoPyObject))]
 pub struct TimestampOptions {
     pub time_unit: Option<TimestampUnit>,
     pub time_zone: Option<String>,
 }
 
+#[cfg(feature = "python")]
 impl<'source> FromPyObject<'source> for TimestampUnit {
     fn extract_bound(bound: &pyo3::Bound<'source, PyAny>) -> PyResult<Self> {
         let s: String = <String as FromPyObject>::extract_bound(bound)?;
@@ -82,6 +90,7 @@ impl<'source> FromPyObject<'source> for TimestampUnit {
     }
 }
 
+#[cfg(feature = "python")]
 fn _get_extracted_string(dict: &Bound<PyDict>, key: &str) -> PyResult<Option<String>> {
     if let Some(item) = dict.get_item(key)? {
         Ok(Some(item.extract()?))
@@ -90,6 +99,7 @@ fn _get_extracted_string(dict: &Bound<PyDict>, key: &str) -> PyResult<Option<Str
     }
 }
 
+#[cfg(feature = "python")]
 impl<'source> FromPyObject<'source> for TimestampOptions {
     fn extract_bound(bound: &pyo3::Bound<'source, PyAny>) -> PyResult<Self> {
         let obj = bound;
@@ -145,7 +155,8 @@ fn map_avro_data_type(dt: &str) -> AvroType {
 /// DuckDB, and Polars schemas.
 ///
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+#[derive(Serialize, Deserialize, Debug)]
+#[cfg_attr(feature = "python", derive(IntoPyObject))]
 pub struct Schema {
     pub namespace: Option<String>,
     #[serde(rename = "schemaElement")]
@@ -266,7 +277,8 @@ impl Schema {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "python", derive(IntoPyObject))]
 pub struct SchemaElement {
     pub id: String,
     pub name: String,
@@ -590,10 +602,11 @@ impl SchemaElement {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+#[derive(Serialize, Deserialize, Debug)]
+#[cfg_attr(feature = "python", derive(IntoPyObject))]
 pub struct AvroSchema {
     #[serde(rename = "type")]
-    #[pyo3(item("type"))]
+    #[cfg_attr(feature = "python", pyo3(item("type")))]
     pub schema_type: String,
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -605,11 +618,12 @@ pub struct AvroSchema {
     pub namespace: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+#[derive(Serialize, Deserialize, Debug)]
+#[cfg_attr(feature = "python", derive(IntoPyObject))]
 pub struct AvroField {
     pub name: String,
     #[serde(rename = "type")]
-    #[pyo3(item("type"))]
+    #[cfg_attr(feature = "python", pyo3(item("type")))]
     pub field_type: AvroType,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub doc: Option<String>,
@@ -619,7 +633,8 @@ pub struct AvroField {
 // pub struct AvroLogical {
 //
 // }
-#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+#[derive(Serialize, Deserialize, Debug)]
+#[cfg_attr(feature = "python", derive(IntoPyObject))]
 #[serde(untagged)]
 pub enum AvroType {
     /// simple type (like "string", "int", etc.)
@@ -631,17 +646,18 @@ pub enum AvroType {
     Enum(AvroEnum),
     Logical {
         #[serde(rename = "type")]
-        #[pyo3(item("type"))]
+        #[cfg_attr(feature = "python", pyo3(item("type")))]
         base: String,
         #[serde(rename = "logicalType")]
-        #[pyo3(item("logicalType"))]
+        #[cfg_attr(feature = "python", pyo3(item("logicalType")))]
         logical: String },
 }
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+#[derive(Serialize, Deserialize, Debug)]
+#[cfg_attr(feature = "python", derive(IntoPyObject))]
 pub struct AvroEnum {
     #[serde(rename = "type")]
-    #[pyo3(item("type"))]
+    #[cfg_attr(feature = "python", pyo3(item("type")))]
     pub schema_type: String, // must be "enum"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub doc: Option<String>,
@@ -651,7 +667,8 @@ pub struct AvroEnum {
     pub namespace: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject)]
+#[derive(Serialize, Deserialize, Debug)]
+#[cfg_attr(feature = "python", derive(IntoPyObject))]
 pub struct SparkSchema {
     #[serde(rename = "type")]
     pub schema_type: String,
@@ -672,13 +689,14 @@ impl SparkSchema {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, IntoPyObject, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "python", derive(IntoPyObject))]
 pub struct SparkField {
     #[serde(rename = "name")]
-    #[pyo3(item("name"))]
+    #[cfg_attr(feature = "python", pyo3(item("name")))]
     pub field_name: String,
     #[serde(rename = "type")]
-    #[pyo3(item("type"))]
+    #[cfg_attr(feature = "python", pyo3(item("type")))]
     pub field_type: String,
     pub nullable: bool,
     pub metadata: Option<HashMap<String, String>>,
