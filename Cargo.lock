@@ -2008,7 +2008,7 @@ dependencies = [
 
 [[package]]
 name = "pyaxp"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "arrow",
  "encoding_rs",
@@ -2919,7 +2919,7 @@ checksum = "fdd20c5420375476fbd4394763288da7eb0cc0b8c11deed431a91562af7335d3"
 
 [[package]]
 name = "yaxp-cli"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "clap",
  "encoding_rs",
@@ -2947,7 +2947,7 @@ dependencies = [
 
 [[package]]
 name = "yaxp-core"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "arrow",
  "encoding_rs",
