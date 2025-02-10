@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use clap::Parser;
 use encoding_rs::{Encoding, UTF_8};
 use serde::Serialize;
@@ -24,7 +25,7 @@ enum OutputFormat {
 struct Args {
     /// Path to the XSD file
     #[clap(short, long)]
-    xsd: String,
+    xsd: PathBuf,
 
     /// Output format
     #[clap(short, long, default_value = "json")]
@@ -56,7 +57,7 @@ fn main() {
     };
 
     let use_encoding = Encoding::for_label(args.encoding.as_bytes()).unwrap_or(UTF_8);
-    let result = parse_file(&args.xsd, Some(timestamp_options), Some(use_encoding));
+    let result = parse_file(args.xsd, Some(timestamp_options), Some(use_encoding));
 
     match result {
         Ok(schema) => match args.format {
