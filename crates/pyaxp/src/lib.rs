@@ -10,6 +10,7 @@ use pyo3::types::PyAny;
 use pyo3::types::PyDict;
 use std::collections::HashMap;
 use std::fmt;
+use std::path::PathBuf;
 use std::str::FromStr;
 use yaxp_core::xsdp::parser::parse_file;
 use yaxp_core::xsdp::parser::TimestampOptions;
@@ -279,7 +280,7 @@ impl PyArrowSchemaConversion for Schema {
 #[pyfunction(signature = (xsd_file, format, timestamp_options=None, encoding="utf-8"))]
 fn parse_xsd(
     py: Python,
-    xsd_file: &str,
+    xsd_file: PathBuf,
     format: SchemaFormat,
     timestamp_options: Option<TimestampOptions>,
     encoding: &str,
