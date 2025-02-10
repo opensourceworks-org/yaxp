@@ -34,6 +34,7 @@ dev = [
     "fastavro>=1.10.0",
     "pip>=25.0",
     "avro>=1.12.0",
+    "pandas>=2.2.3",
 ]
 
 [project.urls]

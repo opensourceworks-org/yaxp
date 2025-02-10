@@ -20,6 +20,7 @@ use std::io::Read;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::{fmt, fs};
+use std::path::PathBuf;
 
 /// Converting the `TimestampUnit` enum to a string representation for Polars breaks
 /// on "μs" when passing from rust to python. We handle that here by converting it to "us".
@@ -897,12 +898,15 @@ fn parse_element(
     })
 }
 
-pub fn parse_file(
-    xsd_file: &str,
-    timestamp_options: Option<TimestampOptions>,
-    encoding: Option<&'static Encoding>,
-) -> Result<Schema, Box<dyn std::error::Error>> {
-    let file = File::open(xsd_file).expect("Failed to read XSD file");
+pub fn read_xsd_file(xsd_file: PathBuf, encoding: Option<&'static Encoding>) -> Result<String, Box<dyn std::error::Error>> {
+    let parsed_file = File::open(xsd_file);
+    //.expect("Failed to read XSD file");
+
+    if let Err(e) = parsed_file {
+        return Err(format!("Failed to read XSD file: {}", e).into());
+    }
+
+    let file = parsed_file.unwrap();
 
     let use_encoding = encoding.unwrap_or(UTF_8);
 
@@ -913,7 +917,17 @@ pub fn parse_file(
     let mut xml_content = String::new();
     transcode_reader.read_to_string(&mut xml_content)?;
 
-    let doc = Document::parse(&xml_content).expect("Failed to parse XML");
+    Ok(xml_content)
+}
+
+pub fn parse_xsd_string(xsd_string: &str, timestamp_options: Option<TimestampOptions>) -> Result<Schema, Box<dyn std::error::Error>> {
+    let parse_doc = Document::parse(xsd_string);
+
+    if let Err(e) = parse_doc {
+        return Err(format!("Failed to parse XML: {}. Maybe try a different encoding (utf-16 ?).", e).into());
+    }
+
+    let doc = parse_doc.unwrap();
 
     let global_types = Arc::new(Mutex::new(HashMap::new()));
 
@@ -945,27 +959,11 @@ pub fn parse_file(
         .into_inner()
         .expect("Mutex should be unlocked");
 
-    // for node in doc.root().descendants() {
-    //     if node.tag_name().name() == "simpleType" {
-    //         if let Some(name) = node.attribute("name") {
-    //             for child in node.children() {
-    //                 if child.tag_name().name() == "restriction" {
-    //                     global_types.insert(name.to_string(), extract_constraints(child));
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
     let mut schema_element = None;
-
-    // let mut documentation = None;
 
     for node in doc.root().descendants() {
         if node.tag_name().name() == "element" {
             schema_element = parse_element(node, node.attribute("name").unwrap(), &final_map);
-            //schema_element.unwrap().documentation = extract_documentation(node);
-            // schema_element.as_mut().unwrap().documentation = documentation.clone();
             break;
         }
     }
@@ -982,6 +980,13 @@ pub fn parse_file(
         Err("Failed to find the main schema element in the XSD.".into())
     }
 }
+
+pub fn parse_file(xsd_file: PathBuf, timestamp_options: Option<TimestampOptions>, encoding: Option<&'static Encoding>) -> Result<Schema, Box<dyn std::error::Error>> {
+    let xml_content = read_xsd_file(xsd_file, encoding)?;
+
+    parse_xsd_string(&xml_content, timestamp_options)
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -1120,7 +1125,7 @@ mod tests {
         )
         .unwrap();
 
-        let schema = parse_file(file_path.to_str().unwrap(), None, None).unwrap();
+        let schema = parse_file(file_path, None, None).unwrap();
         assert_eq!(schema.schema_element.name, "testElement");
     }
 
