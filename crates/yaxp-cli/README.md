@@ -28,11 +28,16 @@ Converts xsd schema to:
 - [x] polars
 - [ ] protobuf
 
+## Installation
+
+```shell
+$ cargo install yaxp-cli
+```
 
 ## Usage
 
 ```shell
-$ ./yaxp-cli --help
+$ yaxp-cli --help
 <yaxp-cli ⚡> Yet Another XSD Parser
 
 Usage: yaxp-cli [OPTIONS] --xsd <XSD>
