@@ -14,6 +14,8 @@
 
 > 📌 **Note:** This project is still under heavy development, and its APIs are subject to change.
 
+> **🏃 RUNNING EXAMPLE USING WASM**   
+>[<xsd ⚡> convert](https://xsd-convert.com)  
 
 ## Introduction
 Using [roxmltree](https://github.com/RazrFalcon/roxmltree) to parse XML files. 
