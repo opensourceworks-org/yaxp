@@ -75,7 +75,10 @@ crates
 
 ## TODO
 
-- [x] Add pyo3/maturin support
-- [ ] add parameter for timezone unit/TZ (testing with polars)
-- [x] Add support for different xsd file encoding: UTF-16, UTF16LE, ...
-- [ ] Add more tests
+- [x]  pyo3/maturin support
+- [ ]  parameter for timezone unit/TZ (testing with polars)
+- [x]  support for different xsd file encoding: UTF-16, UTF16LE, ...
+- [ ]  more tests
+- [ ]  strict schema validation to spec ([avro](https://avro.apache.org/docs/1.11.1/specification/), [json-schema](https://json-schema.org/specification), ...)
+- [x]  example implementation [<xsd ⚡> convert](https://xsd-convert.com) 
+
