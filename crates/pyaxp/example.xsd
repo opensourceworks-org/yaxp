@@ -11,27 +11,27 @@
             <xs:pattern value=".{3}"/>
         </xs:restriction>
     </xs:simpleType>
-    <xs:simpleType name="nonNegativeDecimal">
+    <xs:simpleType name="positiveDecimal">
         <xs:annotation>
-            <xs:documentation>any decimal value >= 0</xs:documentation>
+            <xs:documentation>any positive decimal value</xs:documentation>
         </xs:annotation>
         <xs:restriction base="decimal257">
             <xs:minInclusive value="0"/>
         </xs:restriction>
     </xs:simpleType>
-    <xs:simpleType name="PriceMode">
+    <xs:simpleType name="Valuta">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="%"/>
-            <xs:enumeration value="P"/>
+            <xs:enumeration value="PCT"/>
             <xs:enumeration value="R"/>
+            <xs:enumeration value="D"/>
         </xs:restriction>
     </xs:simpleType>
     <xs:simpleType name="UnitType">
         <xs:restriction base="xs:string">
+            <xs:enumeration value="U"/>
             <xs:enumeration value="N"/>
-            <xs:enumeration value="Q"/>
-            <xs:enumeration value="V"/>
-            <xs:enumeration value="C"/>
+            <xs:enumeration value="I"/>
+            <xs:enumeration value="T"/>
         </xs:restriction>
     </xs:simpleType>
     <xs:simpleType name="Sign">
@@ -90,7 +90,7 @@
     </xs:simpleType>
     <xs:simpleType name="Percentage">
         <xs:annotation>
-            <xs:documentation>decimal representing a percentage (ie. .08 -> 8% and .7523 -> 72.23%)</xs:documentation>
+            <xs:documentation>percentage (ie. .08 -> 8% and .7523 -> 72.23%)</xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:decimal"/>
     </xs:simpleType>
@@ -177,8 +177,8 @@
                     </xs:simpleType>
                 </xs:element>
                 <xs:element name="Field13" type="UnitType" nillable="true" />
-                <xs:element name="Field14" type="PriceMode" nillable="true" />
-                <xs:element name="Field15" type="PriceMode" nillable="false" />
+                <xs:element name="Field14" type="Valuta" nillable="true" />
+                <xs:element name="Field15" type="Valuta" nillable="false" />
                 <xs:element name="Field16" type="Currency" nillable="true" />
                 <xs:element name="Field17" type="xs:date" nillable="false" />
                 <xs:element name="Field18" nillable="true">

@@ -106,11 +106,11 @@ RECORDS = [
 #
 #
 def test_avro_schema():
-    schema = parse_xsd("example_clean_avro.xsd", "avro")
+    schema = parse_xsd("example.xsd", "avro")
 
     parsed_schema = parse_schema(schema)
 
-    assert parsed_schema["__named_schemas"]["Field13"]["symbols"] == ['N', 'Q', 'V', 'C']
+    assert parsed_schema["__named_schemas"]["Field13"]["symbols"] == ['U', 'N', 'I', 'T']
 
 # def main():
 #     test_read_avro_from_list()

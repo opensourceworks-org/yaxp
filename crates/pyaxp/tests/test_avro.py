@@ -86,7 +86,7 @@ RECORDS = [
 # reading avro from csv is not part of the schema tests
 
 def test_avro_schema():
-    schema_dict = parse_xsd("example_clean_avro.xsd", "avro")
+    schema_dict = parse_xsd("example.xsd", "avro")
 
     schema_json = json.dumps(schema_dict)
     parsed_schema = avro.schema.parse(schema_json)
