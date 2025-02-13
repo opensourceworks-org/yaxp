@@ -367,5 +367,10 @@ shape: (3, 21)
 
 ## TODO
 
-- [x] Add pyo3/maturin support
-- [ ] Add more tests
+- [x]  pyo3/maturin support
+- [ ]  parameter for timezone unit/TZ (testing with polars)
+- [x]  support for different xsd file encoding: UTF-16, UTF16LE, ...
+- [ ]  more tests
+- [ ]  strict schema validation to spec ([xsd](https://www.w3.org/TR/xmlschema11-1/), [avro](https://avro.apache.org/docs/1.11.1/specification/), [json-schema](https://json-schema.org/specification), ...)
+- [x]  example implementation [<xsd ⚡> convert](https://xsd-convert.com)
+- [ ]  option to lowercase column names
