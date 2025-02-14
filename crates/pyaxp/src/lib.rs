@@ -277,16 +277,17 @@ impl PyArrowSchemaConversion for Schema {
     }
 }
 
-#[pyfunction(signature = (xsd_file, format, timestamp_options=None, encoding="utf-8"))]
+#[pyfunction(signature = (xsd_file, format, timestamp_options=None, encoding="utf-8", lowercase=false))]
 fn parse_xsd(
     py: Python,
     xsd_file: PathBuf,
     format: SchemaFormat,
     timestamp_options: Option<TimestampOptions>,
     encoding: &str,
+    lowercase: Option<bool>,
 ) -> PyResult<PyObject> {
     let use_encoding = Encoding::for_label(encoding.as_bytes()).unwrap_or(UTF_8);
-    let result = parse_file(xsd_file, timestamp_options, Some(use_encoding));
+    let result = parse_file(xsd_file, timestamp_options, Some(use_encoding), lowercase);
 
     match result {
         Ok(schema) => {

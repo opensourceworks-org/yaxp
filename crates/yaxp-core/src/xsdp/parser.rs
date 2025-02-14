@@ -805,12 +805,17 @@ fn parse_element(
     node: roxmltree::Node,
     parent_xpath: &str,
     global_types: &HashMap<String, SimpleType>,
+    lowercase: Option<bool>,
 ) -> Option<SchemaElement> {
     if node.tag_name().name() != "element" {
         return None;
     }
 
-    let name = node.attribute("name")?.to_string();
+    let mut name = node.attribute("name")?.to_string();
+    if lowercase.is_some() && lowercase.unwrap() {
+        name = name.to_lowercase();
+    }
+
     let nullable = node.attribute("nillable").map(|s| s == "true");
     let xpath = format!("{}/{}", parent_xpath, name);
     let mut data_type = node.attribute("type").map(|s| s.replace("xs:", ""));
@@ -881,7 +886,7 @@ fn parse_element(
                 //let q = extract_documentation(child);
 
                 for subchild in child.descendants() {
-                    if let Some(sub_element) = parse_element(subchild, &xpath, global_types) {
+                    if let Some(sub_element) = parse_element(subchild, &xpath, global_types, lowercase) {
                         elements.push(sub_element);
                     }
                 }
@@ -938,7 +943,7 @@ pub fn read_xsd_file(xsd_file: PathBuf, encoding: Option<&'static Encoding>) -> 
     Ok(xml_content)
 }
 
-pub fn parse_xsd_string(xsd_string: &str, timestamp_options: Option<TimestampOptions>) -> Result<Schema, Box<dyn std::error::Error>> {
+pub fn parse_xsd_string(xsd_string: &str, timestamp_options: Option<TimestampOptions>, lowercase: Option<bool>) -> Result<Schema, Box<dyn std::error::Error>> {
     let parse_doc = Document::parse(xsd_string);
 
     if let Err(e) = parse_doc {
@@ -952,6 +957,7 @@ pub fn parse_xsd_string(xsd_string: &str, timestamp_options: Option<TimestampOpt
     doc.root().descendants().for_each(|node| {
         if node.tag_name().name() == "simpleType" {
             if let Some(name) = node.attribute("name") {
+
                 let mut doc = None;
                 for child in node.children() {
                     if child.tag_name().name() == "annotation" {
@@ -981,7 +987,15 @@ pub fn parse_xsd_string(xsd_string: &str, timestamp_options: Option<TimestampOpt
 
     for node in doc.root().descendants() {
         if node.tag_name().name() == "element" {
-            schema_element = parse_element(node, node.attribute("name").unwrap(), &final_map);
+            let mut element_name = "".to_string();
+            if let Some(name) = node.attribute("name"){
+                if lowercase.is_some() && lowercase.unwrap() {
+                    element_name = name.to_lowercase();
+                } else {
+                    element_name = name.to_string();
+                }
+            }
+            schema_element = parse_element(node, &element_name, &final_map, lowercase);
             break;
         }
     }
@@ -999,10 +1013,12 @@ pub fn parse_xsd_string(xsd_string: &str, timestamp_options: Option<TimestampOpt
     }
 }
 
-pub fn parse_file(xsd_file: PathBuf, timestamp_options: Option<TimestampOptions>, encoding: Option<&'static Encoding>) -> Result<Schema, Box<dyn std::error::Error>> {
+pub fn parse_file(xsd_file: PathBuf, timestamp_options: Option<TimestampOptions>,
+                  encoding: Option<&'static Encoding>,
+                  lowercase: Option<bool>) -> Result<Schema, Box<dyn std::error::Error>> {
     let xml_content = read_xsd_file(xsd_file, encoding)?;
 
-    parse_xsd_string(&xml_content, timestamp_options)
+    parse_xsd_string(&xml_content, timestamp_options, lowercase)
 }
 
 
@@ -1143,10 +1159,29 @@ mod tests {
         )
         .unwrap();
 
-        let schema = parse_file(file_path, None, None).unwrap();
+        let schema = parse_file(file_path, None, None, Some(false)).unwrap();
         assert_eq!(schema.schema_element.name, "testElement");
     }
 
+    #[test]
+    fn test_parse_file_lowercase() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("test.xsd");
+        let mut file = File::create(&file_path).unwrap();
+        writeln!(
+            file,
+            r#"
+            <schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+                <xs:element name="testElement" type="xs:string"/>
+            </schema>
+            "#
+        )
+            .unwrap();
+
+        let schema = parse_file(file_path, None, None, Some(true)).unwrap();
+        dbg!(&schema);
+        assert_eq!(schema.schema_element.name, "testelement");
+    }
     #[test]
     fn test_schema_element_to_arrow() {
         let schema = create_test_schema();
@@ -1256,7 +1291,7 @@ mod tests {
         "#;
         let doc = Document::parse(xml).unwrap();
         let node = doc.root().first_child().unwrap();
-        let element = parse_element(node, "", &HashMap::new()).unwrap();
+        let element = parse_element(node, "", &HashMap::new(), Some(false)).unwrap();
         assert_eq!(element.name, "testElement");
         assert_eq!(element.data_type, Some("string".to_string()));
     }
