@@ -21,7 +21,6 @@ data = [
      date(2024, 2, 3), "M3", "N3", None, None)
 ]
 
-
 spark = SparkSession.builder.master("local").appName("Test Data").getOrCreate()
 schema = parse_xsd("example.xsd", "spark")
 df = spark.createDataFrame(data, schema=schema)
@@ -34,6 +33,7 @@ def test_parse_schema():
     assert df.schema.fields[11].dataType == DecimalType(25, 7)
     assert df.schema.fields[18].dataType == StringType()
     assert df.schema.fields[20].dataType == IntegerType()
+
 
 def test_read_csv_with_schema():
     assert df.count() == 3
@@ -55,3 +55,10 @@ def test_read_csv_with_schema():
     assert df.collect()[2][11] == Decimal("98765432109876543.7654321")
     assert df.collect()[2][18] == "N3"
     assert df.collect()[2][20] == None
+
+
+def test_lowercase():
+    schema = parse_xsd("example.xsd", "spark", lowercase=True)
+    assert len(schema.fields) == 21
+    for i in range(len(schema.fields)):
+        assert schema.fields[i].name == f"field{i + 1}"

@@ -59,7 +59,7 @@ Converts xsd schema to:
 crates
 ├── pyaxp               -> Python bindings 
 ├── yaxp-cli            -> cli version
-├── yaxp-common         -> lib (deprecated, replaced by yaxp-core
+├── yaxp-common         -> lib (deprecated, replaced by yaxp-core)
 └── yaxp-core           -> main lib crate, core
 
 ```
@@ -67,7 +67,7 @@ crates
 ## Downloads
 
 - [yaxp-core](https://crates.io/crates/yaxp-core) main lib crate, core
-- [yaxp-cli](https://crates.io/crates/yaxp-cli) cli interface on yaxp-common
+- [yaxp-cli](https://crates.io/crates/yaxp-cli) cli interface on yaxp-core
 - [pyaxp](https://pypi.org/project/pyaxp/) python bindings
 
 

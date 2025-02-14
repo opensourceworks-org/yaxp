@@ -46,6 +46,10 @@ struct Args {
     /// optional encoding of the XSD file
     #[clap(short, long, default_value = "utf-8")]
     encoding: String,
+
+    /// optional lowercase column names
+    #[clap(short, long, default_value = "false")]
+    lowercase: Option<bool>,
 }
 
 fn main() {
@@ -57,7 +61,7 @@ fn main() {
     };
 
     let use_encoding = Encoding::for_label(args.encoding.as_bytes()).unwrap_or(UTF_8);
-    let result = parse_file(args.xsd, Some(timestamp_options), Some(use_encoding));
+    let result = parse_file(args.xsd, Some(timestamp_options), Some(use_encoding), args.lowercase);
 
     match result {
         Ok(schema) => match args.format {
