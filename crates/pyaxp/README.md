@@ -141,8 +141,10 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> import duckdb
 >>> from pyaxp import parse_xsd
 >>>
->>> j = parse_xsd("example.xsd", format="duckdb")
->>> res = duckdb.sql(f"select * from read_csv('example-data.csv', columns={j})")
+>>> duckdb_schema = parse_xsd("example.xsd", format="duckdb")
+>>> type(duckdb_schema)
+<class 'dict'>
+>>> res = duckdb.sql(f"select * from read_csv('example-data.csv', columns={duckdb_schema})")
 >>> res
 ┌─────────┬─────────┬─────────┬─────────┬─────────────────────┬────────────┬────────────┬─────────┬───┬─────────┬─────────┬─────────┬─────────┬────────────┬─────────┬─────────┬───────────────┬─────────┐
 │ Field1  │ Field2  │ Field3  │ Field4  │       Field5        │   Field6   │   Field7   │ Field8  │ … │ Field13 │ Field14 │ Field15 │ Field16 │  Field17   │ Field18 │ Field19 │    Field20    │ Field21 │
@@ -155,7 +157,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 │ 3 rows                                                                                                                                                                           21 columns (17 shown) │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
->>> j
+>>> duckdb_schema
 {'Field1': 'VARCHAR(15)', 'Field2': 'VARCHAR(20)', 'Field3': 'VARCHAR(10)', 'Field4': 'VARCHAR(50)', 'Field5': 'TIMESTAMP', 'Field6': 'DATE', 'Field7': 'DATE', 'Field8': 'VARCHAR(10)', 'Field9': 'VARCHAR(3)', 'Field10': 'VARCHAR(30)', 'Field11': 'VARCHAR(10)', 'Field12': 'DECIMAL(25, 7)', 'Field13': 'VARCHAR(255)', 'Field14': 'VARCHAR(255)', 'Field15': 'VARCHAR(255)', 'Field16': 'VARCHAR(255)', 'Field17': 'DATE', 'Field18': 'VARCHAR(30)', 'Field19': 'VARCHAR(255)', 'Field20': 'DECIMAL(25, 7)', 'Field21': 'INTEGER'}
 >>>
 ```
@@ -168,6 +170,8 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> from pyaxp import parse_xsd
 >>>
 >>> arrow_schema = parse_xsd("example.xsd", format="arrow")
+>>> type(arrow_schema)
+<class 'pyarrow.lib.Schema'>
 >>> convert_options = csv.ConvertOptions(column_types=arrow_schema)
 >>> arrow_df = csv.read_csv("example-data.csv",
 ...                         parse_options=csv.ParseOptions(delimiter=";"),
@@ -343,27 +347,252 @@ Field10: [["G1","G2",""]]
 
 ### with polars
 ```python
->>> import polars as pl
+>> import polars as pl
 >>> from pyaxp import parse_xsd
 >>> schema = parse_xsd("example.xsd", format="polars")
->>> schema
-{'Field1': String, 'Field2': String, 'Field3': String, 'Field4': String, 'Field5': Datetime(time_unit='ms', time_zone=None), 'Field6': Date, 'Field7': Date, 'Field8': String, 'Field9': String, 'Field10': String, 'Field11': String, 'Field12': Decimal(precision=25, scale=7), 'Field13': String, 'Field14': String, 'Field15': String, 'Field16': String, 'Field17': Date, 'Field18': String, 'Field19': String, 'Field20': Decimal(precision=38, scale=10), 'Field21': Int64}
->>> df = pl.read_csv("example-data.csv", schema=schema)
+>>> type(schema)
+<class 'dict'>
+>>> df = pl.read_csv("example-data.csv", schema=schema, separator=";")
 >>> df
 shape: (3, 21)
-┌─────────────────────────────────┬────────┬────────┬────────┬───┬─────────┬─────────┬────────────────┬─────────┐
-│ Field1                          ┆ Field2 ┆ Field3 ┆ Field4 ┆ … ┆ Field18 ┆ Field19 ┆ Field20        ┆ Field21 │
-│ ---                             ┆ ---    ┆ ---    ┆ ---    ┆   ┆ ---     ┆ ---     ┆ ---            ┆ ---     │
-│ str                             ┆ str    ┆ str    ┆ str    ┆   ┆ str     ┆ str     ┆ decimal[38,10] ┆ i64     │
-╞═════════════════════════════════╪════════╪════════╪════════╪═══╪═════════╪═════════╪════════════════╪═════════╡
-│ A1;B1;C1;D1;2024-02-01T10:30:0… ┆ null   ┆ null   ┆ null   ┆ … ┆ null    ┆ null    ┆ null           ┆ null    │
-│ A2;B2;C2;;2024-02-01T11:00:00.… ┆ null   ┆ null   ┆ null   ┆ … ┆ null    ┆ null    ┆ null           ┆ null    │
-│ A3;B3;C3;D3;2024-02-01T12:15:0… ┆ null   ┆ null   ┆ null   ┆ … ┆ null    ┆ null    ┆ null           ┆ null    │
-└─────────────────────────────────┴────────┴────────┴────────┴───┴─────────┴─────────┴────────────────┴─────────┘
+┌────────┬────────┬────────┬────────┬───┬─────────┬─────────┬────────────────┬─────────┐
+│ Field1 ┆ Field2 ┆ Field3 ┆ Field4 ┆ … ┆ Field18 ┆ Field19 ┆ Field20        ┆ Field21 │
+│ ---    ┆ ---    ┆ ---    ┆ ---    ┆   ┆ ---     ┆ ---     ┆ ---            ┆ ---     │
+│ str    ┆ str    ┆ str    ┆ str    ┆   ┆ str     ┆ str     ┆ decimal[38,10] ┆ i64     │
+╞════════╪════════╪════════╪════════╪═══╪═════════╪═════════╪════════════════╪═════════╡
+│ A1     ┆ B1     ┆ C1     ┆ D1     ┆ … ┆ M1      ┆ Y       ┆ 100.0000000000 ┆ 10      │
+│ A2     ┆ B2     ┆ C2     ┆ null   ┆ … ┆ M2      ┆ N       ┆ 200.0000000000 ┆ 20      │
+│ A3     ┆ B3     ┆ C3     ┆ D3     ┆ … ┆ M3      ┆ Y       ┆ null           ┆ null    │
+└────────┴────────┴────────┴────────┴───┴─────────┴─────────┴────────────────┴─────────┘
+>>> df.types
+Traceback (most recent call last):
+File "<python-input-7>", line 1, in <module>
+df.types
+AttributeError: 'DataFrame' object has no attribute 'types'. Did you mean: 'dtypes'?
 >>> df.dtypes
-[String, String, String, String, Datetime(time_unit='ms', time_zone=None), Date, Date, String, String, String, String, Decimal(precision=25, scale=7), String, String, String, String, Date, String, String, Decimal(precision=38, scale=10), Int64]
+[String, String, String, String, Datetime(time_unit='ns', time_zone=None), Date, Date, String, String, String, String, Decimal(precision=25, scale=7), String, String, String, String, Date, String, String, Decimal(precision=38, scale=10), Int64]
+>>> schema
+{'Field1': String, 'Field2': String, 'Field3': String, 'Field4': String, 'Field5': Datetime(time_unit='ns', time_zone=None), 'Field6': Date, 'Field7': Date, 'Field8': String, 'Field9': String, 'Field10': String, 'Field11': String, 'Field12': Decimal(precision=25, scale=7), 'Field13': String, 'Field14': String, 'Field15': String, 'Field16': String, 'Field17': Date, 'Field18': String, 'Field19': String, 'Field20': Decimal(precision=38, scale=10), 'Field21': Int64}
 >>>
 ```
+
+### with avro
+```python
+>>> schema = parse_xsd("example.xsd", "avro")
+>>> type(schema)
+<class 'dict'>
+>>> schema
+{'type': 'record', 'name': 'Main_Element', 'doc': None, 'aliases': None, 'fields': [{'name': 'Field1', 'type': 'string', 'doc': None}, {'name': 'Field2', 'type': 'string', 'doc': None}, {'name': 'Field3', 'type': 'string', 'doc': None}, {'name': 'Field4', 'type': ['null', 'string'], 'doc': None}, {'name': 'Field5', 'type': 'string', 'doc': None}, {'name': 'Field6', 'type': ['null', {'type': 'int', 'logicalType': 'date'}], 'doc': None}, {'name': 'Field7', 'type': ['null', {'type': 'int', 'logicalType': 'date'}], 'doc': None}, {'name': 'Field8', 'type': 'string', 'doc': None}, {'name': 'Field9', 'type': ['null', 'string'], 'doc': None}, {'name': 'Field10', 'type': ['null', 'string'], 'doc': None}, {'name': 'Field11', 'type': ['null', 'string'], 'doc': None}, {'name': 'Field12', 'type': ['null', 'string'], 'doc': None}, {'name': 'Field13', 'type': ['null', {'type': 'enum', 'doc': None, 'name': 'Field13', 'symbols': ['U', 'N', 'I', 'T'], 'namespace': None}], 'doc': None}, {'name': 'Field14', 'type': ['null', {'type': 'enum', 'doc': None, 'name': 'Field14', 'symbols': ['PCT', 'R', 'D'], 'namespace': None}], 'doc': None}, {'name': 'Field15', 'type': {'type': 'enum', 'doc': None, 'name': 'Field15', 'symbols': ['PCT', 'R', 'D'], 'namespace': None}, 'doc': None}, {'name': 'Field16', 'type': ['null', 'string'], 'doc': 'explanation about the currency type'}, {'name': 'Field17', 'type': {'type': 'int', 'logicalType': 'date'}, 'doc': None}, {'name': 'Field18', 'type': ['null', 'string'], 'doc': None}, {'name': 'Field19', 'type': ['null', {'type': 'enum', 'doc': None, 'name': 'Field19', 'symbols': ['Y', 'N'], 'namespace': None}], 'doc': None}, {'name': 'Field20', 'type': ['null', 'string'], 'doc': 'percentage (ie. .08 -> 8% and .7523 -> 72.23%)'}, {'name': 'Field21', 'type': ['null', 'string'], 'doc': None}], 'namespace': None}
+>>> import json
+>>> print(json.dumps(schema, indent=4))
+{
+    "type": "record",
+    "name": "Main_Element",
+    "doc": null,
+    "aliases": null,
+    "fields": [
+        {
+            "name": "Field1",
+            "type": "string",
+            "doc": null
+        },
+        {
+            "name": "Field2",
+            "type": "string",
+            "doc": null
+        },
+        {
+            "name": "Field3",
+            "type": "string",
+            "doc": null
+        },
+        {
+            "name": "Field4",
+            "type": [
+                "null",
+                "string"
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field5",
+            "type": "string",
+            "doc": null
+        },
+        {
+            "name": "Field6",
+            "type": [
+                "null",
+                {
+                    "type": "int",
+                    "logicalType": "date"
+                }
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field7",
+            "type": [
+                "null",
+                {
+                    "type": "int",
+                    "logicalType": "date"
+                }
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field8",
+            "type": "string",
+            "doc": null
+        },
+        {
+            "name": "Field9",
+            "type": [
+                "null",
+                "string"
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field10",
+            "type": [
+                "null",
+                "string"
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field11",
+            "type": [
+                "null",
+                "string"
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field12",
+            "type": [
+                "null",
+                "string"
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field13",
+            "type": [
+                "null",
+                {
+                    "type": "enum",
+                    "doc": null,
+                    "name": "Field13",
+                    "symbols": [
+                        "U",
+                        "N",
+                        "I",
+                        "T"
+                    ],
+                    "namespace": null
+                }
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field14",
+            "type": [
+                "null",
+                {
+                    "type": "enum",
+                    "doc": null,
+                    "name": "Field14",
+                    "symbols": [
+                        "PCT",
+                        "R",
+                        "D"
+                    ],
+                    "namespace": null
+                }
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field15",
+            "type": {
+                "type": "enum",
+                "doc": null,
+                "name": "Field15",
+                "symbols": [
+                    "PCT",
+                    "R",
+                    "D"
+                ],
+                "namespace": null
+            },
+            "doc": null
+        },
+        {
+            "name": "Field16",
+            "type": [
+                "null",
+                "string"
+            ],
+            "doc": "explanation about the currency type"
+        },
+        {
+            "name": "Field17",
+            "type": {
+                "type": "int",
+                "logicalType": "date"
+            },
+            "doc": null
+        },
+        {
+            "name": "Field18",
+            "type": [
+                "null",
+                "string"
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field19",
+            "type": [
+                "null",
+                {
+                    "type": "enum",
+                    "doc": null,
+                    "name": "Field19",
+                    "symbols": [
+                        "Y",
+                        "N"
+                    ],
+                    "namespace": null
+                }
+            ],
+            "doc": null
+        },
+        {
+            "name": "Field20",
+            "type": [
+                "null",
+                "string"
+            ],
+            "doc": "percentage, ie.: .08 -> 8%"
+        },
+        {
+            "name": "Field21",
+            "type": [
+                "null",
+                "string"
+            ],
+            "doc": null
+        }
+    ],
+    "namespace": null
+}
+>>>
+```
+
 
 ## TODO
 
