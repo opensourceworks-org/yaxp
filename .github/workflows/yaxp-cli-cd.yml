@@ -34,7 +34,7 @@ jobs:
       - name: Archive Linux x64 build
         run: |
           mkdir -p target/linux
-          mv target/release/your_app target/linux/linux-x64-${{ env.VERSION }}
+          mv target/release/yaxp-cli target/linux/linux-x64-${{ env.VERSION }}
           tar czf target/linux/linux-x64-${{ env.VERSION }}.tar.gz -C target/linux linux-x64-${{ env.VERSION }}
 
       - name: Upload Linux x64 artifact
@@ -71,7 +71,7 @@ jobs:
   #     - name: Archive Linux arm64 build
   #       run: |
   #         mkdir -p target/linux
-  #         mv target/aarch64-unknown-linux-gnu/release/your_app target/linux/linux-arm64-${{ env.VERSION }}
+  #         mv target/aarch64-unknown-linux-gnu/release/yaxp-cli target/linux/linux-arm64-${{ env.VERSION }}
   #         tar czf target/linux/linux-arm64-${{ env.VERSION }}.tar.gz -C target/linux linux-arm64-${{ env.VERSION }}
 
   #     - name: Upload Linux arm64 artifact
@@ -108,7 +108,7 @@ jobs:
   #     - name: Archive Linux armv7 build
   #       run: |
   #         mkdir -p target/linux
-  #         mv target/armv7-unknown-linux-gnueabihf/release/your_app target/linux/linux-armv7-${{ env.VERSION }}
+  #         mv target/armv7-unknown-linux-gnueabihf/release/yaxp-cli target/linux/linux-armv7-${{ env.VERSION }}
   #         tar czf target/linux/linux-armv7-${{ env.VERSION }}.tar.gz -C target/linux linux-armv7-${{ env.VERSION }}
 
   #     - name: Upload Linux armv7 artifact
@@ -138,7 +138,7 @@ jobs:
   #     - name: Archive Windows x64 build
   #       run: |
   #         mkdir -p target/windows
-  #         mv target/x86_64-pc-windows-msvc/release/your_app.exe target/windows/windows-x64-${{ env.VERSION }}.exe
+  #         mv target/x86_64-pc-windows-msvc/release/yaxp-cli.exe target/windows/windows-x64-${{ env.VERSION }}.exe
   #         tar czf target/windows/windows-x64-${{ env.VERSION }}.tar.gz -C target/windows windows-x64-${{ env.VERSION }}.exe
 
   #     - name: Upload Windows x64 artifact
@@ -168,7 +168,7 @@ jobs:
   #     - name: Archive macOS arm64 build
   #       run: |
   #         mkdir -p target/macos
-  #         mv target/aarch64-apple-darwin/release/your_app target/macos/macos-arm64-${{ env.VERSION }}
+  #         mv target/aarch64-apple-darwin/release/yaxp-cli target/macos/macos-arm64-${{ env.VERSION }}
   #         tar czf target/macos/macos-arm64-${{ env.VERSION }}.tar.gz -C target/macos macos-arm64-${{ env.VERSION }}
 
   #     - name: Upload macOS arm64 artifact
