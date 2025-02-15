@@ -257,7 +257,10 @@ impl Schema {
             "properties": {
                 "Main_Element": {
                     "type": "object",
-                    "properties": fields,
+                    "properties": fields.iter().fold(serde_json::Map::new(), |mut acc, field| {
+                        acc.extend(field.as_object().unwrap().clone());
+                        acc
+                    }),
                 }
             },
             "required": required
@@ -1320,7 +1323,7 @@ mod tests {
         "#;
         let doc = Document::parse(xml).unwrap();
         let node = doc.root().first_child().unwrap();
-        let element = parse_element(node, "", &HashMap::new(), Some(false)).unwrap();
+        let element = parse_element(node, "", &IndexMap::new(), Some(false)).unwrap();
         assert_eq!(element.name, "testElement");
         assert_eq!(element.data_type, Some("string".to_string()));
     }
