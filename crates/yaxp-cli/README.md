@@ -29,10 +29,70 @@ Converts xsd schema to:
 - [ ] protobuf
 
 ## Installation
-
+When you already have Rust installed or want to install from crates.io:
 ```shell
 $ cargo install yaxp-cli
 ```
+
+on MacOS, you can also install using homebrew, from the tap [opensourceworks-org/homebrew-yaxp-cli](https://github.com/opensourceworks-org/homebrew-yaxp-cli)
+```shell
+$ tap opensourceworks-org/homebrew-yaxp-cli
+$ install yaxp-cli
+==> Downloading https://formulae.brew.sh/api/formula.jws.json
+==> Downloading https://formulae.brew.sh/api/cask.jws.json
+==> Fetching dependencies for opensourceworks-org/yaxp-cli/yaxp-cli: libgit2@1.8 and rust
+==> Fetching libgit2@1.8
+==> Downloading https://ghcr.io/v2/homebrew/core/libgit2/1.8/manifests/1.8.4
+Already downloaded: /Users/jeroen/Library/Caches/Homebrew/downloads/9302724e2f7c0eb8122204e7d395e6c2575f176e627ea6f6a16ac4fc24be4d72--libgit2@1.8-1.8.4.bottle_manifest.json
+==> Downloading https://ghcr.io/v2/homebrew/core/libgit2/1.8/blobs/sha256:5a9fe4aae3865e5c977633107b829e639e6535d8f986c851d60d63bb2e5b0932
+Already downloaded: /Users/jeroen/Library/Caches/Homebrew/downloads/4932981d5b3e9b3df6840f9997858933be19bc15a7f9d8c5ce8e792b7339ee79--libgit2@1.8--1.8.4.arm64_sequoia.bottle.tar.gz
+==> Fetching rust
+==> Downloading https://ghcr.io/v2/homebrew/core/rust/manifests/1.84.1-1
+Already downloaded: /Users/jeroen/Library/Caches/Homebrew/downloads/0c05e1e855a42deca67c60dbd378e38f9a8c2abe0ac9adf40600280372100cfa--rust-1.84.1-1.bottle_manifest.json
+==> Downloading https://ghcr.io/v2/homebrew/core/rust/blobs/sha256:6fe0e14f08adae82662551b478fdfaeb87f516be7762c60d28203e830c5caa91
+Already downloaded: /Users/jeroen/Library/Caches/Homebrew/downloads/551c47c2bbea27cd0ba44e951c5e3a99e60485a5e8be0ed4087eb3b6850e2284--rust--1.84.1.arm64_sequoia.bottle.1.tar.gz
+==> Fetching opensourceworks-org/yaxp-cli/yaxp-cli
+==> Downloading https://github.com/opensourceworks-org/homebrew-yaxp-cli/releases/download/v0.2.2/macos-arm64-v0.2.2.tar.gz
+Already downloaded: /Users/jeroen/Library/Caches/Homebrew/downloads/738a5b79287f1e0d54a967db2f6f8212053c762792331b5545b173779b141dfb--macos-arm64-v0.2.2.tar.gz
+==> Installing yaxp-cli from opensourceworks-org/yaxp-cli
+==> Installing dependencies for opensourceworks-org/yaxp-cli/yaxp-cli: libgit2@1.8 and rust
+==> Installing opensourceworks-org/yaxp-cli/yaxp-cli dependency: libgit2@1.8
+==> Downloading https://ghcr.io/v2/homebrew/core/libgit2/1.8/manifests/1.8.4
+Already downloaded: /Users/jeroen/Library/Caches/Homebrew/downloads/9302724e2f7c0eb8122204e7d395e6c2575f176e627ea6f6a16ac4fc24be4d72--libgit2@1.8-1.8.4.bottle_manifest.json
+==> Pouring libgit2@1.8--1.8.4.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/libgit2@1.8/1.8.4: 106 files, 4.7MB
+==> Installing opensourceworks-org/yaxp-cli/yaxp-cli dependency: rust
+==> Downloading https://ghcr.io/v2/homebrew/core/rust/manifests/1.84.1-1
+Already downloaded: /Users/jeroen/Library/Caches/Homebrew/downloads/0c05e1e855a42deca67c60dbd378e38f9a8c2abe0ac9adf40600280372100cfa--rust-1.84.1-1.bottle_manifest.json
+==> Pouring rust--1.84.1.arm64_sequoia.bottle.1.tar.gz
+🍺  /opt/homebrew/Cellar/rust/1.84.1: 3,566 files, 321.3MB
+==> Installing opensourceworks-org/yaxp-cli/yaxp-cli
+🍺  /opt/homebrew/Cellar/yaxp-cli/0.2.2: 4 files, 1.3MB, built in 1 second
+==> Running `brew cleanup yaxp-cli`...
+Disable this behaviour by setting HOMEBREW_NO_INSTALL_CLEANUP.
+Hide these hints with HOMEBREW_NO_ENV_HINTS (see `man brew`).
+$ yaxp-cli --version
+yaxp-cli 0.2.2
+$ which yaxp-cli
+/opt/homebrew/bin/yaxp-cli
+$ yaxp-cli --help
+<yaxp-cli ⚡> Yet Another XSD Parser
+
+Usage: yaxp-cli [OPTIONS] --xsd <XSD>
+
+Options:
+  -x, --xsd <XSD>              Path to the XSD file
+  -f, --format <FORMAT>        Output format [default: json] [possible values: json, arrow, spark, json-schema, duckdb, polars, avro]
+  -o, --output <OUTPUT>        optional output filename
+  -t, --timeunit <TIMEUNIT>    optional timeunit [default: ns]
+  -z, --timezone <TIMEZONE>    optional timezone [default: UTC]
+  -e, --encoding <ENCODING>    optional encoding of the XSD file [default: utf-8]
+  -l, --lowercase <LOWERCASE>  optional lowercase column names [default: false] [possible values: true, false]
+  -h, --help                   Print help
+  -V, --version                Print version
+$
+```
+
 
 ## Usage
 
