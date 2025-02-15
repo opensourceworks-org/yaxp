@@ -25,7 +25,9 @@ jobs:
 
       - name: Get version from tag
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build for Linux x64
         working-directory: crates/yaxp-cli
@@ -34,14 +36,14 @@ jobs:
       - name: Archive Linux x64 build
         run: |
           mkdir -p target/linux
-          mv target/release/yaxp-cli target/linux/linux-x64-${{ env.VERSION }}
-          tar czf target/linux/linux-x64-${{ env.VERSION }}.tar.gz -C target/linux linux-x64-${{ env.VERSION }}
+          mv target/release/yaxp-cli target/linux/linux-x64-${{ steps.version.outputs.version }}
+          tar czf target/linux/linux-x64-${{ steps.version.outputs.version }}.tar.gz -C target/linux linux-x64-${{ steps.version.outputs.version }}
 
       - name: Upload Linux x64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux-x64-${{ env.VERSION }}-release
-          path: target/linux/linux-x64-${{ env.VERSION }}.tar.gz
+          name: linux-x64-${{ steps.version.outputs.version }}-release
+          path: target/linux/linux-x64-${{ steps.version.outputs.version }}.tar.gz
 
   # build-linux-arm64:
   #   runs-on: ubuntu-latest
@@ -71,14 +73,14 @@ jobs:
   #     - name: Archive Linux arm64 build
   #       run: |
   #         mkdir -p target/linux
-  #         mv target/aarch64-unknown-linux-gnu/release/yaxp-cli target/linux/linux-arm64-${{ env.VERSION }}
-  #         tar czf target/linux/linux-arm64-${{ env.VERSION }}.tar.gz -C target/linux linux-arm64-${{ env.VERSION }}
+  #         mv target/aarch64-unknown-linux-gnu/release/yaxp-cli target/linux/linux-arm64-${{ steps.version.outputs.version }}
+  #         tar czf target/linux/linux-arm64-${{ steps.version.outputs.version }}.tar.gz -C target/linux linux-arm64-${{ steps.version.outputs.version }}
 
   #     - name: Upload Linux arm64 artifact
   #       uses: actions/upload-artifact@v4
   #       with:
-  #         name: linux-arm64-${{ env.VERSION }}-release
-  #         path: target/linux/linux-arm64-${{ env.VERSION }}.tar.gz
+  #         name: linux-arm64-${{ steps.version.outputs.version }}-release
+  #         path: target/linux/linux-arm64-${{ steps.version.outputs.version }}.tar.gz
 
   # build-linux-armv7:
   #   runs-on: ubuntu-latest
@@ -108,14 +110,14 @@ jobs:
   #     - name: Archive Linux armv7 build
   #       run: |
   #         mkdir -p target/linux
-  #         mv target/armv7-unknown-linux-gnueabihf/release/yaxp-cli target/linux/linux-armv7-${{ env.VERSION }}
-  #         tar czf target/linux/linux-armv7-${{ env.VERSION }}.tar.gz -C target/linux linux-armv7-${{ env.VERSION }}
+  #         mv target/armv7-unknown-linux-gnueabihf/release/yaxp-cli target/linux/linux-armv7-${{ steps.version.outputs.version }}
+  #         tar czf target/linux/linux-armv7-${{ steps.version.outputs.version }}.tar.gz -C target/linux linux-armv7-${{ steps.version.outputs.version }}
 
   #     - name: Upload Linux armv7 artifact
   #       uses: actions/upload-artifact@v4
   #       with:
-  #         name: linux-armv7-${{ env.VERSION }}-release
-  #         path: target/linux/linux-armv7-${{ env.VERSION }}.tar.gz
+  #         name: linux-armv7-${{ steps.version.outputs.version }}-release
+  #         path: target/linux/linux-armv7-${{ steps.version.outputs.version }}.tar.gz
 
   # build-windows-x64:
   #   runs-on: windows-latest
@@ -138,14 +140,14 @@ jobs:
   #     - name: Archive Windows x64 build
   #       run: |
   #         mkdir -p target/windows
-  #         mv target/x86_64-pc-windows-msvc/release/yaxp-cli.exe target/windows/windows-x64-${{ env.VERSION }}.exe
-  #         tar czf target/windows/windows-x64-${{ env.VERSION }}.tar.gz -C target/windows windows-x64-${{ env.VERSION }}.exe
+  #         mv target/x86_64-pc-windows-msvc/release/yaxp-cli.exe target/windows/windows-x64-${{ steps.version.outputs.version }}.exe
+  #         tar czf target/windows/windows-x64-${{ steps.version.outputs.version }}.tar.gz -C target/windows windows-x64-${{ steps.version.outputs.version }}.exe
 
   #     - name: Upload Windows x64 artifact
   #       uses: actions/upload-artifact@v4
   #       with:
-  #         name: windows-x64-${{ env.VERSION }}-release
-  #         path: target/windows/windows-x64-${{ env.VERSION }}.tar.gz
+  #         name: windows-x64-${{ steps.version.outputs.version }}-release
+  #         path: target/windows/windows-x64-${{ steps.version.outputs.version }}.tar.gz
 
   # build-macos-arm64:
   #   runs-on: macos-latest
@@ -168,14 +170,14 @@ jobs:
   #     - name: Archive macOS arm64 build
   #       run: |
   #         mkdir -p target/macos
-  #         mv target/aarch64-apple-darwin/release/yaxp-cli target/macos/macos-arm64-${{ env.VERSION }}
-  #         tar czf target/macos/macos-arm64-${{ env.VERSION }}.tar.gz -C target/macos macos-arm64-${{ env.VERSION }}
+  #         mv target/aarch64-apple-darwin/release/yaxp-cli target/macos/macos-arm64-${{ steps.version.outputs.version }}
+  #         tar czf target/macos/macos-arm64-${{ steps.version.outputs.version }}.tar.gz -C target/macos macos-arm64-${{ steps.version.outputs.version }}
 
   #     - name: Upload macOS arm64 artifact
   #       uses: actions/upload-artifact@v4
   #       with:
-  #         name: macos-arm64-${{ env.VERSION }}-release
-  #         path: target/macos/macos-arm64-${{ env.VERSION }}.tar.gz
+  #         name: macos-arm64-${{ steps.version.outputs.version }}-release
+  #         path: target/macos/macos-arm64-${{ steps.version.outputs.version }}.tar.gz
 
   release:
     needs: [build-linux-x64]
@@ -185,14 +187,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          echo "version=$VERSION" >> $GITHUB_ENV
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/linux/linux-x64-${{ env.VERSION }}.tar.gz
-            # target/linux/linux-arm64-${{ env.VERSION }}.tar.gz
-            # target/linux/linux-armv7-${{ env.VERSION }}.tar.gz
-            # target/windows/windows-x64-${{ env.VERSION }}.tar.gz
-            # target/macos/macos-arm64-${{ env.VERSION }}.tar.gz
+            target/linux/linux-x64-${{ steps.version.outputs.version }}.tar.gz
+            # target/linux/linux-arm64-${{ steps.version.outputs.version }}.tar.gz
+            # target/linux/linux-armv7-${{ steps.version.outputs.version }}.tar.gz
+            # target/windows/windows-x64-${{ steps.version.outputs.version }}.tar.gz
+            # target/macos/macos-arm64-${{ steps.version.outputs.version }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
