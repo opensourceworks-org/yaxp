@@ -201,7 +201,7 @@ jobs:
 
   release:
     # needs: [build-linux-x64]
-    needs: [build-linux-x64, build-windows-x64, build-macos-arm64]
+    needs: [build-linux-x64, build-linux-arm64, build-windows-x64, build-macos-arm64]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -225,5 +225,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/**/*.tar.gz
+          repository: opensourceworks-org/homebrew-yaxp-cli
         env:
           GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
+        
