@@ -45,46 +45,46 @@ jobs:
           name: linux-x64-${{ steps.version.outputs.version }}-release
           path: target/linux/linux-x64-${{ steps.version.outputs.version }}.tar.gz
 
-  build-linux-arm64:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+  # build-linux-arm64:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2
 
-      - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-          target: aarch64-unknown-linux-gnu
+  #     - name: Set up Rust
+  #       uses: actions-rust-lang/setup-rust-toolchain@v1
+  #       with:
+  #         toolchain: stable
+  #         target: aarch64-unknown-linux-gnu
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y gcc-aarch64-linux-gnu
          
-      - name: Get version from tag
-        id: version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+  #     - name: Get version from tag
+  #       id: version
+  #       run: |
+  #         VERSION=${GITHUB_REF#refs/tags/}
+  #         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Build for Linux arm64
-        run: |
-          rustup target add aarch64-unknown-linux-gnu
-          cargo build --release --target aarch64-unknown-linux-gnu
-        working-directory: crates/yaxp-cli
+  #     - name: Build for Linux arm64
+  #       run: |
+  #         rustup target add aarch64-unknown-linux-gnu
+  #         cargo build --release --target aarch64-unknown-linux-gnu
+  #       working-directory: crates/yaxp-cli
 
-      - name: Archive Linux arm64 build
-        run: |
-          mkdir -p target/linux
-          mv target/aarch64-unknown-linux-gnu/release/yaxp-cli target/linux/linux-arm64-${{ steps.version.outputs.version }}
-          tar czf target/linux/linux-arm64-${{ steps.version.outputs.version }}.tar.gz -C target/linux linux-arm64-${{ steps.version.outputs.version }}
+  #     - name: Archive Linux arm64 build
+  #       run: |
+  #         mkdir -p target/linux
+  #         mv target/aarch64-unknown-linux-gnu/release/yaxp-cli target/linux/linux-arm64-${{ steps.version.outputs.version }}
+  #         tar czf target/linux/linux-arm64-${{ steps.version.outputs.version }}.tar.gz -C target/linux linux-arm64-${{ steps.version.outputs.version }}
 
-      - name: Upload Linux arm64 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-arm64-${{ steps.version.outputs.version }}-release
-          path: target/linux/linux-arm64-${{ steps.version.outputs.version }}.tar.gz
+  #     - name: Upload Linux arm64 artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: linux-arm64-${{ steps.version.outputs.version }}-release
+  #         path: target/linux/linux-arm64-${{ steps.version.outputs.version }}.tar.gz
 
   # build-linux-armv7:
   #   runs-on: ubuntu-latest
@@ -189,7 +189,7 @@ jobs:
 
   release:
     # needs: [build-linux-x64]
-    needs: [build-linux-x64, build-linux-arm64, build-windows-x64, build-macos-arm64]
+    needs: [build-linux-x64, build-windows-x64, build-macos-arm64]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
