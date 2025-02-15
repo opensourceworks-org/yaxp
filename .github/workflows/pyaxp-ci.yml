@@ -6,14 +6,14 @@
 name: Build & publish pyaxp to pypi.org
 
 on:
-  push:
-    branches:
-      - main
-      - master
-    tags:
-      - '*'
-    paths:
-      - 'crates/pyaxp/src/**'
+  # push:
+  #   branches:
+  #     - main
+  #     - master
+  #   tags:
+  #     - '*'
+  #   paths:
+  #     - 'crates/pyaxp/src/**'
 #  pull_request:
   workflow_dispatch:
 
