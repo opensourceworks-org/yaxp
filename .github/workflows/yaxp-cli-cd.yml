@@ -28,6 +28,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - name: Build for Linux x64
+        working-directory: crates/yaxp-cli
         run: cargo build --release
 
       - name: Archive Linux x64 build
@@ -42,139 +43,139 @@ jobs:
           name: linux-x64-${{ env.VERSION }}-release
           path: target/linux/linux-x64-${{ env.VERSION }}.tar.gz
 
-  build-linux-arm64:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+  # build-linux-arm64:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2
 
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+  #     - name: Set up Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libssl-dev pkg-config
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y libssl-dev pkg-config
 
-      - name: Get version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+  #     - name: Get version from tag
+  #       id: version
+  #       run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - name: Build for Linux arm64
-        run: |
-          rustup target add aarch64-unknown-linux-gnu
-          cargo build --release --target aarch64-unknown-linux-gnu
+  #     - name: Build for Linux arm64
+  #       run: |
+  #         rustup target add aarch64-unknown-linux-gnu
+  #         cargo build --release --target aarch64-unknown-linux-gnu
 
-      - name: Archive Linux arm64 build
-        run: |
-          mkdir -p target/linux
-          mv target/aarch64-unknown-linux-gnu/release/your_app target/linux/linux-arm64-${{ env.VERSION }}
-          tar czf target/linux/linux-arm64-${{ env.VERSION }}.tar.gz -C target/linux linux-arm64-${{ env.VERSION }}
+  #     - name: Archive Linux arm64 build
+  #       run: |
+  #         mkdir -p target/linux
+  #         mv target/aarch64-unknown-linux-gnu/release/your_app target/linux/linux-arm64-${{ env.VERSION }}
+  #         tar czf target/linux/linux-arm64-${{ env.VERSION }}.tar.gz -C target/linux linux-arm64-${{ env.VERSION }}
 
-      - name: Upload Linux arm64 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-arm64-${{ env.VERSION }}-release
-          path: target/linux/linux-arm64-${{ env.VERSION }}.tar.gz
+  #     - name: Upload Linux arm64 artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: linux-arm64-${{ env.VERSION }}-release
+  #         path: target/linux/linux-arm64-${{ env.VERSION }}.tar.gz
 
-  build-linux-armv7:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+  # build-linux-armv7:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2
 
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+  #     - name: Set up Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libssl-dev pkg-config
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y libssl-dev pkg-config
 
-      - name: Get version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+  #     - name: Get version from tag
+  #       id: version
+  #       run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - name: Build for Linux armv7
-        run: |
-          rustup target add armv7-unknown-linux-gnueabihf
-          cargo build --release --target armv7-unknown-linux-gnueabihf
+  #     - name: Build for Linux armv7
+  #       run: |
+  #         rustup target add armv7-unknown-linux-gnueabihf
+  #         cargo build --release --target armv7-unknown-linux-gnueabihf
 
-      - name: Archive Linux armv7 build
-        run: |
-          mkdir -p target/linux
-          mv target/armv7-unknown-linux-gnueabihf/release/your_app target/linux/linux-armv7-${{ env.VERSION }}
-          tar czf target/linux/linux-armv7-${{ env.VERSION }}.tar.gz -C target/linux linux-armv7-${{ env.VERSION }}
+  #     - name: Archive Linux armv7 build
+  #       run: |
+  #         mkdir -p target/linux
+  #         mv target/armv7-unknown-linux-gnueabihf/release/your_app target/linux/linux-armv7-${{ env.VERSION }}
+  #         tar czf target/linux/linux-armv7-${{ env.VERSION }}.tar.gz -C target/linux linux-armv7-${{ env.VERSION }}
 
-      - name: Upload Linux armv7 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-armv7-${{ env.VERSION }}-release
-          path: target/linux/linux-armv7-${{ env.VERSION }}.tar.gz
+  #     - name: Upload Linux armv7 artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: linux-armv7-${{ env.VERSION }}-release
+  #         path: target/linux/linux-armv7-${{ env.VERSION }}.tar.gz
 
-  build-windows-x64:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+  # build-windows-x64:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2
 
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+  #     - name: Set up Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
 
-      - name: Get version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+  #     - name: Get version from tag
+  #       id: version
+  #       run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - name: Build for Windows x64
-        run: cargo build --release --target x86_64-pc-windows-msvc
+  #     - name: Build for Windows x64
+  #       run: cargo build --release --target x86_64-pc-windows-msvc
 
-      - name: Archive Windows x64 build
-        run: |
-          mkdir -p target/windows
-          mv target/x86_64-pc-windows-msvc/release/your_app.exe target/windows/windows-x64-${{ env.VERSION }}.exe
-          tar czf target/windows/windows-x64-${{ env.VERSION }}.tar.gz -C target/windows windows-x64-${{ env.VERSION }}.exe
+  #     - name: Archive Windows x64 build
+  #       run: |
+  #         mkdir -p target/windows
+  #         mv target/x86_64-pc-windows-msvc/release/your_app.exe target/windows/windows-x64-${{ env.VERSION }}.exe
+  #         tar czf target/windows/windows-x64-${{ env.VERSION }}.tar.gz -C target/windows windows-x64-${{ env.VERSION }}.exe
 
-      - name: Upload Windows x64 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-x64-${{ env.VERSION }}-release
-          path: target/windows/windows-x64-${{ env.VERSION }}.tar.gz
+  #     - name: Upload Windows x64 artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: windows-x64-${{ env.VERSION }}-release
+  #         path: target/windows/windows-x64-${{ env.VERSION }}.tar.gz
 
-  build-macos-arm64:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+  # build-macos-arm64:
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2
 
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+  #     - name: Set up Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
 
-      - name: Get version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+  #     - name: Get version from tag
+  #       id: version
+  #       run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - name: Build for macOS arm64
-        run: cargo build --release --target aarch64-apple-darwin
+  #     - name: Build for macOS arm64
+  #       run: cargo build --release --target aarch64-apple-darwin
 
-      - name: Archive macOS arm64 build
-        run: |
-          mkdir -p target/macos
-          mv target/aarch64-apple-darwin/release/your_app target/macos/macos-arm64-${{ env.VERSION }}
-          tar czf target/macos/macos-arm64-${{ env.VERSION }}.tar.gz -C target/macos macos-arm64-${{ env.VERSION }}
+  #     - name: Archive macOS arm64 build
+  #       run: |
+  #         mkdir -p target/macos
+  #         mv target/aarch64-apple-darwin/release/your_app target/macos/macos-arm64-${{ env.VERSION }}
+  #         tar czf target/macos/macos-arm64-${{ env.VERSION }}.tar.gz -C target/macos macos-arm64-${{ env.VERSION }}
 
-      - name: Upload macOS arm64 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-arm64-${{ env.VERSION }}-release
-          path: target/macos/macos-arm64-${{ env.VERSION }}.tar.gz
+  #     - name: Upload macOS arm64 artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: macos-arm64-${{ env.VERSION }}-release
+  #         path: target/macos/macos-arm64-${{ env.VERSION }}.tar.gz
 
   release:
     needs: [build-linux-x64, build-linux-arm64, build-linux-armv7, build-windows-x64, build-macos-arm64]
@@ -188,9 +189,9 @@ jobs:
         with:
           files: |
             target/linux/linux-x64-${{ env.VERSION }}.tar.gz
-            target/linux/linux-arm64-${{ env.VERSION }}.tar.gz
-            target/linux/linux-armv7-${{ env.VERSION }}.tar.gz
-            target/windows/windows-x64-${{ env.VERSION }}.tar.gz
-            target/macos/macos-arm64-${{ env.VERSION }}.tar.gz
+            # target/linux/linux-arm64-${{ env.VERSION }}.tar.gz
+            # target/linux/linux-armv7-${{ env.VERSION }}.tar.gz
+            # target/windows/windows-x64-${{ env.VERSION }}.tar.gz
+            # target/macos/macos-arm64-${{ env.VERSION }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
