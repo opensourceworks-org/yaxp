@@ -41,3 +41,4 @@ Converts xsd schema to:
 - [ ]  strict schema validation to spec ([xsd](https://www.w3.org/TR/xmlschema11-1/), [avro](https://avro.apache.org/docs/1.11.1/specification/), [json-schema](https://json-schema.org/specification), ...)
 - [x]  example implementation [<xsd ⚡> convert](https://xsd-convert.com)
 - [x]  option to lowercase column names
+- [x]  add custom types to json output
