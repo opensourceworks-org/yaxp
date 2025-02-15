@@ -190,8 +190,8 @@ jobs:
       - name: Archive macOS arm64 build
         run: |
           mkdir -p target/macos
-          mv target/aarch64-apple-darwin/release/yaxp-cli target/macos/macos-arm64-${{ steps.version.outputs.version }}
-          tar czf target/macos/macos-arm64-${{ steps.version.outputs.version }}.tar.gz -C target/macos macos-arm64-${{ steps.version.outputs.version }}
+          mv target/aarch64-apple-darwin/release/yaxp-cli target/macos/yaxp-cli
+          tar czf target/macos/macos-arm64-${{ steps.version.outputs.version }}.tar.gz -C target/macos yaxp-cli
 
       - name: Upload macOS arm64 artifact
         uses: actions/upload-artifact@v4
