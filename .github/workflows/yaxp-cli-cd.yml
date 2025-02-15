@@ -56,11 +56,11 @@ jobs:
         with:
           toolchain: stable
 
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y libssl-dev pkg-config
-
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+         
       - name: Get version from tag
         id: version
         run: |
@@ -71,6 +71,7 @@ jobs:
         run: |
           rustup target add aarch64-unknown-linux-gnu
           cargo build --release --target aarch64-unknown-linux-gnu
+        working-directory: crates/yaxp-cli
 
       - name: Archive Linux arm64 build
         run: |
@@ -84,39 +85,40 @@ jobs:
           name: linux-arm64-${{ steps.version.outputs.version }}-release
           path: target/linux/linux-arm64-${{ steps.version.outputs.version }}.tar.gz
 
-  build-linux-armv7:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+  # build-linux-armv7:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2
 
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+  #     - name: Set up Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
 
-      - name: Get version from tag
-        id: version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+  #     - name: Get version from tag
+  #       id: version
+  #       run: |
+  #         VERSION=${GITHUB_REF#refs/tags/}
+  #         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Build for Linux armv7
-        run: |
-          rustup target add armv7-unknown-linux-gnueabihf
-          cargo build --release --target armv7-unknown-linux-gnueabihf
+  #     - name: Build for Linux armv7
+  #       run: |
+  #         rustup target add armv7-unknown-linux-gnueabihf
+  #         cargo build --release --target armv7-unknown-linux-gnueabihf
+  #       working-directory: crates/yaxp-cli
 
-      - name: Archive Linux armv7 build
-        run: |
-          mkdir -p target/linux
-          mv target/armv7-unknown-linux-gnueabihf/release/yaxp-cli target/linux/linux-armv7-${{ steps.version.outputs.version }}
-          tar czf target/linux/linux-armv7-${{ steps.version.outputs.version }}.tar.gz -C target/linux linux-armv7-${{ steps.version.outputs.version }}
+  #     - name: Archive Linux armv7 build
+  #       run: |
+  #         mkdir -p target/linux
+  #         mv target/armv7-unknown-linux-gnueabihf/release/yaxp-cli target/linux/linux-armv7-${{ steps.version.outputs.version }}
+  #         tar czf target/linux/linux-armv7-${{ steps.version.outputs.version }}.tar.gz -C target/linux linux-armv7-${{ steps.version.outputs.version }}
 
-      - name: Upload Linux armv7 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-armv7-${{ steps.version.outputs.version }}-release
-          path: target/linux/linux-armv7-${{ steps.version.outputs.version }}.tar.gz
+  #     - name: Upload Linux armv7 artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: linux-armv7-${{ steps.version.outputs.version }}-release
+  #         path: target/linux/linux-armv7-${{ steps.version.outputs.version }}.tar.gz
 
   build-windows-x64:
     runs-on: windows-latest
@@ -132,10 +134,11 @@ jobs:
       - name: Get version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          $version = $env:GITHUB_REF -replace '^refs/tags/', ''
+          echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Build for Windows x64
+        working-directory: crates/yaxp-cli
         run: cargo build --release --target x86_64-pc-windows-msvc
 
       - name: Archive Windows x64 build
@@ -168,6 +171,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build for macOS arm64
+        working-directory: crates/yaxp-cli
         run: cargo build --release --target aarch64-apple-darwin
 
       - name: Archive macOS arm64 build
