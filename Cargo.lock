@@ -2008,7 +2008,7 @@ dependencies = [
 
 [[package]]
 name = "pyaxp"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "arrow",
  "encoding_rs",
@@ -2026,6 +2026,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57fe09249128b3173d092de9523eaa75136bf7ba85e0d69eca241c7939c933cc"
 dependencies = [
  "cfg-if",
+ "indexmap",
  "indoc",
  "libc",
  "memoffset",
@@ -2919,7 +2920,7 @@ checksum = "fdd20c5420375476fbd4394763288da7eb0cc0b8c11deed431a91562af7335d3"
 
 [[package]]
 name = "yaxp-cli"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "clap",
  "encoding_rs",
@@ -2947,7 +2948,7 @@ dependencies = [
 
 [[package]]
 name = "yaxp-core"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "arrow",
  "encoding_rs",

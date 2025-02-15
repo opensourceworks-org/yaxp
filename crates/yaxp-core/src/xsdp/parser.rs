@@ -150,6 +150,9 @@ fn map_avro_data_type(dt: &str) -> AvroType {
     }
 }
 
+
+
+
 /// Parsing the XSD file and converting it to various formats begins with a Schema struct
 /// and a SchemaElement struct.  Currently supporting Arrow, Spark, JSON, JSON Schema,
 /// DuckDB, and Polars schemas.
@@ -162,6 +165,8 @@ pub struct Schema {
     #[serde(rename = "schemaElement")]
     pub schema_element: SchemaElement,
     pub timestamp_options: Option<TimestampOptions>,
+    pub doc: Option<String>,
+    pub custom_types: Option<IndexMap<String, SimpleType>>,
 }
 
 impl Schema {
@@ -169,11 +174,15 @@ impl Schema {
         namespace: Option<String>,
         schema_element: SchemaElement,
         timestamp_options: Option<TimestampOptions>,
+        doc: Option<String>,
+        custom_types: Option<IndexMap<String, SimpleType>>,
     ) -> Self {
         Schema {
             namespace,
             schema_element,
             timestamp_options,
+            doc,
+            custom_types,
         }
     }
 
@@ -248,7 +257,10 @@ impl Schema {
             "properties": {
                 "Main_Element": {
                     "type": "object",
-                    "properties": fields,
+                    "properties": fields.iter().fold(serde_json::Map::new(), |mut acc, field| {
+                        acc.extend(field.as_object().unwrap().clone());
+                        acc
+                    }),
                 }
             },
             "required": required
@@ -709,8 +721,10 @@ impl SparkField {
     }
 }
 
-#[derive(Debug)]
-struct SimpleType {
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[cfg_attr(feature = "python", derive(IntoPyObject))]
+pub struct SimpleType {
+    name: Option<String>,
     data_type: Option<String>,
     min_length: Option<String>,
     max_length: Option<String>,
@@ -725,6 +739,7 @@ struct SimpleType {
     nullable: Option<bool>,
     documentation: Option<String>,
 }
+
 
 // xs:enumeration
 fn extract_enum_values(node: roxmltree::Node) -> Option<Vec<String>> {
@@ -758,6 +773,7 @@ fn extract_documentation(node: roxmltree::Node) -> Option<String> {
 // from xs:restriction
 fn extract_constraints(node: roxmltree::Node) -> SimpleType {
     let mut simple_type = SimpleType {
+        name: None,
         data_type: node.attribute("base").map(|s| s.replace("xs:", "")),
         min_length: None,
         max_length: None,
@@ -804,7 +820,7 @@ fn extract_constraints(node: roxmltree::Node) -> SimpleType {
 fn parse_element(
     node: roxmltree::Node,
     parent_xpath: &str,
-    global_types: &HashMap<String, SimpleType>,
+    global_types: &IndexMap<String, SimpleType>,
     lowercase: Option<bool>,
 ) -> Option<SchemaElement> {
     if node.tag_name().name() != "element" {
@@ -951,8 +967,10 @@ pub fn parse_xsd_string(xsd_string: &str, timestamp_options: Option<TimestampOpt
     }
 
     let doc = parse_doc.unwrap();
+    let mut schema_doc: Option<String> = None;
 
-    let global_types = Arc::new(Mutex::new(HashMap::new()));
+
+    let global_types = Arc::new(Mutex::new(IndexMap::new()));
 
     doc.root().descendants().for_each(|node| {
         if node.tag_name().name() == "simpleType" {
@@ -970,10 +988,15 @@ pub fn parse_xsd_string(xsd_string: &str, timestamp_options: Option<TimestampOpt
                     if child.tag_name().name() == "restriction" {
                         let mut map = global_types.lock().unwrap();
                         let mut st = extract_constraints(child);
+                        st.name = Some(name.to_string());
                         st.documentation = doc.clone();
                         map.insert(name.to_string(), st);
                     }
                 }
+            }
+        } else if node.tag_name().name() == "annotation" {
+            if schema_doc.is_none() {
+                schema_doc = extract_documentation(node);
             }
         }
     });
@@ -1000,11 +1023,17 @@ pub fn parse_xsd_string(xsd_string: &str, timestamp_options: Option<TimestampOpt
         }
     }
 
+    let mut custom_types_vec: Vec<_> = final_map.into_iter().collect();
+    custom_types_vec.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
+    let final_map: IndexMap<_, _> = custom_types_vec.into_iter().collect();
+
     if let Some(schema_element) = schema_element {
         let schema = Schema {
             namespace: None,
             schema_element,
             timestamp_options,
+            doc: schema_doc,
+            custom_types: Some(final_map),
         };
 
         Ok(schema)
@@ -1123,6 +1152,8 @@ mod tests {
                 documentation: Some("This is the main schema".to_string()),
             },
             timestamp_options: None,
+            doc: Some("TestSchema".to_string()),
+            custom_types: None,
         };
 
         schema
@@ -1142,6 +1173,7 @@ mod tests {
         let arrow_schema = schema.to_arrow().unwrap();
         assert_eq!(arrow_schema.fields().len(), 3);
         assert_eq!(arrow_schema.field(0).name(), "field1");
+        assert_eq!(schema.doc, Some("TestSchema".to_string()));
     }
 
     #[test]
@@ -1291,7 +1323,7 @@ mod tests {
         "#;
         let doc = Document::parse(xml).unwrap();
         let node = doc.root().first_child().unwrap();
-        let element = parse_element(node, "", &HashMap::new(), Some(false)).unwrap();
+        let element = parse_element(node, "", &IndexMap::new(), Some(false)).unwrap();
         assert_eq!(element.name, "testElement");
         assert_eq!(element.data_type, Some("string".to_string()));
     }
