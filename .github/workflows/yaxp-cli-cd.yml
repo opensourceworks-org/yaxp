@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'  # Triggers release when a version tag is pushed
+  workflow_dispatch:
 
 jobs:
   build-linux-x64:
