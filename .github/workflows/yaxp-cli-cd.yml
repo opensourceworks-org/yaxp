@@ -37,7 +37,7 @@ jobs:
           tar czf target/linux/linux-x64-${{ env.VERSION }}.tar.gz -C target/linux linux-x64-${{ env.VERSION }}
 
       - name: Upload Linux x64 artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-x64-${{ env.VERSION }}-release
           path: target/linux/linux-x64-${{ env.VERSION }}.tar.gz
@@ -74,7 +74,7 @@ jobs:
           tar czf target/linux/linux-arm64-${{ env.VERSION }}.tar.gz -C target/linux linux-arm64-${{ env.VERSION }}
 
       - name: Upload Linux arm64 artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-arm64-${{ env.VERSION }}-release
           path: target/linux/linux-arm64-${{ env.VERSION }}.tar.gz
@@ -111,7 +111,7 @@ jobs:
           tar czf target/linux/linux-armv7-${{ env.VERSION }}.tar.gz -C target/linux linux-armv7-${{ env.VERSION }}
 
       - name: Upload Linux armv7 artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-armv7-${{ env.VERSION }}-release
           path: target/linux/linux-armv7-${{ env.VERSION }}.tar.gz
@@ -141,7 +141,7 @@ jobs:
           tar czf target/windows/windows-x64-${{ env.VERSION }}.tar.gz -C target/windows windows-x64-${{ env.VERSION }}.exe
 
       - name: Upload Windows x64 artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-x64-${{ env.VERSION }}-release
           path: target/windows/windows-x64-${{ env.VERSION }}.tar.gz
@@ -171,7 +171,7 @@ jobs:
           tar czf target/macos/macos-arm64-${{ env.VERSION }}.tar.gz -C target/macos macos-arm64-${{ env.VERSION }}
 
       - name: Upload macOS arm64 artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos-arm64-${{ env.VERSION }}-release
           path: target/macos/macos-arm64-${{ env.VERSION }}.tar.gz
