@@ -255,12 +255,13 @@ impl Schema {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
-                "Main_Element": {
+                format!("{}", &self.schema_element.name): {
                     "type": "object",
-                    "properties": fields.iter().fold(serde_json::Map::new(), |mut acc, field| {
-                        acc.extend(field.as_object().unwrap().clone());
-                        acc
-                    }),
+                    "properties": fields.iter().map(|field| {
+                        let obj = field.as_object().unwrap();
+                        let (key, value) = obj.iter().next().unwrap(); // Assumes each field has one key
+                        json!({ "key": key, "value": value })
+                    }).collect::<Vec<_>>(),
                 }
             },
             "required": required
